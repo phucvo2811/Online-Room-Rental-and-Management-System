@@ -1,0 +1,183 @@
+{% extends 'layouts/base.twig' %}
+{% block title %}Đăng ký tài khoản{% endblock %}
+
+{% block content %}
+<div class="auth-page py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-7 col-lg-6">
+                <div class="auth-card">
+                    <div class="auth-header">
+                        <div class="brand-icon mx-auto mb-3" style="width:52px;height:52px;font-size:24px;">
+                            <i class="bi bi-person-plus-fill"></i>
+                        </div>
+                        <h2 class="fw-800 mb-1 text-white">Tạo tài khoản</h2>
+                        <p class="text-white-50 mb-0 small">Miễn phí · Nhanh chóng · An toàn</p>
+                    </div>
+                    <div class="auth-body">
+                        <form action="{{ route('/register') }}" method="POST" class="auth-form">
+
+                            <div class="mb-4">
+                                <label class="form-label">Bạn là?</label>
+                                <div class="role-selector">
+                                    <label class="role-card {{ (old.role ?? 'tenant') == 'tenant' ? 'selected' : '' }}"
+                                        onclick="selectRole('tenant')">
+                                        <input type="radio" name="role" value="tenant"
+                                            {{ (old.role ?? 'tenant') == 'tenant' ? 'checked' : '' }}>
+                                        <span class="role-icon">🔍</span>
+                                        <div class="role-label">Người thuê</div>
+                                        <div class="role-desc">Tìm phòng trọ</div>
+                                    </label>
+                                    <label class="role-card {{ (old.role ?? '') == 'landlord' ? 'selected' : '' }}"
+                                        onclick="selectRole('landlord')">
+                                        <input type="radio" name="role" value="landlord"
+                                            {{ (old.role ?? '') == 'landlord' ? 'checked' : '' }}>
+                                        <span class="role-icon">🏠</span>
+                                        <div class="role-label">Chủ trọ</div>
+                                        <div class="role-desc">Đăng phòng cho thuê</div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Họ và tên <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0">
+                                        <i class="bi bi-person text-muted"></i>
+                                    </span>
+                                    <input type="text" name="name"
+                                        class="form-control border-start-0 ps-0 {{ errors.name is defined ? 'is-invalid' : '' }}"
+                                        placeholder="Nguyễn Văn A"
+                                        value="{{ old.name ?? '' }}" required>
+                                    {% if errors.name is defined %}
+                                        <div class="invalid-feedback">{{ errors.name }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Email <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0">
+                                        <i class="bi bi-envelope text-muted"></i>
+                                    </span>
+                                    <input type="email" name="email"
+                                        class="form-control border-start-0 ps-0 {{ errors.email is defined ? 'is-invalid' : '' }}"
+                                        placeholder="your@email.com"
+                                        value="{{ old.email ?? '' }}" required>
+                                    {% if errors.email is defined %}
+                                        <div class="invalid-feedback">{{ errors.email }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Số điện thoại</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0">
+                                        <i class="bi bi-telephone text-muted"></i>
+                                    </span>
+                                    <input type="tel" name="phone"
+                                        class="form-control border-start-0 ps-0"
+                                        placeholder="0901234567"
+                                        value="{{ old.phone ?? '' }}">
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-6">
+                                    <label class="form-label">Mật khẩu <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light border-end-0">
+                                            <i class="bi bi-lock text-muted"></i>
+                                        </span>
+                                        <input type="password" name="password" id="pwdField"
+                                            class="form-control border-start-0 border-end-0 ps-0 {{ errors.password is defined ? 'is-invalid' : '' }}"
+                                            placeholder="••••••••" required minlength="6">
+                                        <button type="button" class="input-group-text bg-light"
+                                            onclick="togglePwd('pwdField',this)">
+                                            <i class="bi bi-eye text-muted"></i>
+                                        </button>
+                                        {% if errors.password is defined %}
+                                            <div class="invalid-feedback">{{ errors.password }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Xác nhận <span class="text-danger">*</span></label>
+                                    <input type="password" name="confirm_password"
+                                        class="form-control {{ errors.confirm is defined ? 'is-invalid' : '' }}"
+                                        placeholder="••••••••" required>
+                                    {% if errors.confirm is defined %}
+                                        <div class="invalid-feedback">{{ errors.confirm }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <div class="d-flex gap-1 mb-1">
+                                    {% for i in 1..4 %}
+                                        <div class="flex-fill rounded" id="bar{{ i }}"
+                                            style="height:4px;background:#e5e7eb;transition:background .2s"></div>
+                                    {% endfor %}
+                                </div>
+                                <div class="small text-muted" id="pwdLabel">Nhập mật khẩu</div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="d-flex gap-2 small">
+                                    <input type="checkbox" required>
+                                    <span>Tôi đồng ý với
+                                        <a href="#" class="text-primary">Điều khoản sử dụng</a> và
+                                        <a href="#" class="text-primary">Chính sách bảo mật</a>
+                                    </span>
+                                </label>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100 fw-700 py-2">
+                                <i class="bi bi-person-check me-2"></i>Tạo tài khoản
+                            </button>
+                        </form>
+
+                        <div class="text-center mt-4 pt-3 border-top">
+                            <span class="small text-muted">Đã có tài khoản? </span>
+                            <a href="{{ route('/login') }}" class="small fw-700">Đăng nhập</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function selectRole(role) {
+    document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
+    document.querySelector(`input[value="${role}"]`).closest('.role-card').classList.add('selected');
+    document.querySelector(`input[value="${role}"]`).checked = true;
+}
+function togglePwd(id, btn) {
+    const f = document.getElementById(id), i = btn.querySelector('i');
+    f.type = f.type === 'password' ? 'text' : 'password';
+    i.className = f.type === 'password' ? 'bi bi-eye text-muted' : 'bi bi-eye-slash text-muted';
+}
+document.getElementById('pwdField')?.addEventListener('input', function () {
+    const v = this.value;
+    let score = 0;
+    if (v.length >= 6) score++;
+    if (v.length >= 10) score++;
+    if (/[A-Z]/.test(v) && /[0-9]/.test(v)) score++;
+    if (/[!@#$%^&*]/.test(v)) score++;
+    const colors = ['','#EF4444','#F59E0B','#10B981','#059669'];
+    const labels = ['Nhập mật khẩu','Yếu','Trung bình','Khá mạnh','Rất mạnh'];
+    for (let i = 1; i <= 4; i++) {
+        document.getElementById('bar' + i).style.background = i <= score ? colors[score] : '#e5e7eb';
+    }
+    const lbl = document.getElementById('pwdLabel');
+    lbl.textContent = labels[score] || labels[0];
+    lbl.style.color  = colors[score] || '#9CA3AF';
+});
+</script>
+{% endblock %}

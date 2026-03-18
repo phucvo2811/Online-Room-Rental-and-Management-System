@@ -1,0 +1,47 @@
+/* Button styles */
+.btn--primary,
+.btn-primary {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+  font-weight: 600;
+  transition: var(--transition);
+}
+
+.btn--primary:hover,
+.btn-primary:hover {
+  background: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
+}
+
+.btn--outline-primary,
+.btn-outline-primary {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  font-weight: 600;
+}
+
+.btn--outline-primary:hover,
+.btn-outline-primary:hover {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.btn-social {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.1);
+  color: rgba(255,255,255,.7);
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+
+.btn-social:hover {
+  background: var(--color-primary);
+  color: #fff;
+}

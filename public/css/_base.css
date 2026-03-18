@@ -1,0 +1,51 @@
+/* Base reset + typography */
+* , *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: 'Be Vietnam Pro', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: var(--transition);
+}
+
+a:hover {
+  color: var(--color-primary-dark);
+}
+
+:focus-visible {
+  outline: 3px solid rgba(249,115,22,.4);
+  outline-offset: 2px;
+}
+
+/* Utility font-weight helpers */
+.fw-500 { font-weight: 500; }
+.fw-600 { font-weight: 600; }
+.fw-700 { font-weight: 700; }
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+/* Utility helpers */
+.text-primary { color: var(--color-primary); }

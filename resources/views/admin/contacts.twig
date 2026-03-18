@@ -1,0 +1,49 @@
+{% extends 'layouts/admin.twig' %}
+{% set active_page = 'contacts' %}
+{% block title %}Tin nhắn liên hệ{% endblock %}
+
+{% block admin_content %}
+<h4 class="fw-800 mb-4">Tin nhắn liên hệ ({{ contacts|length }})</h4>
+
+<div class="admin-table">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Người gửi</th>
+                    <th>Phòng</th>
+                    <th>Nội dung</th>
+                    <th>Thời gian</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if contacts is empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5 text-muted">
+                            Chưa có tin nhắn nào
+                        </td>
+                    </tr>
+                {% else %}
+                    {% for c in contacts %}
+                        <tr>
+                            <td>
+                                <div class="fw-600 small">{{ c.sender_name }}</div>
+                                <div class="text-muted" style="font-size:11px">
+                                    {{ c.sender_email }} · {{ c.sender_phone }}
+                                </div>
+                            </td>
+                            <td>
+                                <a href="{{ route('/rooms/' ~ c.room_id) }}" target="_blank" class="small">
+                                    {{ c.room_title|truncate(30) }}
+                                </a>
+                            </td>
+                            <td class="small">{{ c.message|truncate(80) }}</td>
+                            <td class="small text-muted">{{ c.created_at|date('d/m H:i') }}</td>
+                        </tr>
+                    {% endfor %}
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

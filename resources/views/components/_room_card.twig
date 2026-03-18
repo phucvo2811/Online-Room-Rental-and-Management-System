@@ -1,0 +1,93 @@
+{# Usage: {% include 'components/_room_card.twig' with { room: room } %} #}
+
+{% set type_label = room_types[room.room_type] ?? room.room_type %}
+{% set img_url = room.primary_image ? upload_url ~ room.primary_image : null %}
+
+<div class="room-card h-100">
+
+    <div class="room-card-img">
+        {% if img_url %}
+            <img src="{{ img_url }}" alt="{{ room.title }}" loading="lazy">
+        {% else %}
+            <div class="placeholder-img">
+                <i class="bi bi-image"></i>
+                <span class="small mt-2">Chưa có ảnh</span>
+            </div>
+        {% endif %}
+
+        <span class="room-badge">{{ type_label }}</span>
+
+        {% if not room.is_available %}
+            <span class="room-badge rented" style="top:auto;bottom:12px;">Đã thuê</span>
+        {% endif %}
+
+        {% if auth %}
+            <button class="fav-btn" onclick="toggleFav(this, {{ room.id }})" title="Yêu thích">
+                <i class="bi bi-heart"></i>
+            </button>
+        {% endif %}
+    </div>
+
+    <div class="room-card-body">
+        <div class="room-type-tag">
+            <i class="bi bi-house-door"></i> {{ type_label }}
+        </div>
+
+        <div class="room-title">
+            <a href="{{ route('/rooms/' ~ room.id) }}" class="text-decoration-none text-dark">
+                {{ room.title }}
+            </a>
+        </div>
+
+        <div class="room-address">
+            <i class="bi bi-geo-alt-fill text-primary flex-shrink-0"></i>
+            <span>{{ room.address }}</span>
+        </div>
+
+        <div class="room-meta">
+            <span class="room-meta-item">
+                <i class="bi bi-arrows-angle-expand"></i>{{ room.area }}m²
+            </span>
+            <span class="room-meta-item">
+                <i class="bi bi-people"></i>{{ room.max_people }} người
+            </span>
+            {% if room.avg_rating > 0 %}
+                <span class="room-meta-item">
+                    <i class="bi bi-star-fill text-warning"></i>{{ room.avg_rating }}
+                </span>
+            {% endif %}
+        </div>
+
+        <div class="room-amenities">
+            {% if room.has_wifi %}
+                <span class="amenity-tag has"><i class="bi bi-wifi me-1"></i>WiFi</span>
+            {% endif %}
+            {% if room.has_ac %}
+                <span class="amenity-tag has"><i class="bi bi-snow2 me-1"></i>Máy lạnh</span>
+            {% endif %}
+            {% if room.has_parking %}
+                <span class="amenity-tag has"><i class="bi bi-car-front me-1"></i>Gửi xe</span>
+            {% endif %}
+            {% if room.allow_pet %}
+                <span class="amenity-tag has">🐾 Nuôi thú</span>
+            {% endif %}
+        </div>
+
+        <div class="room-price-row mt-auto">
+            <div>
+                <div class="room-price">
+                    {{ room.price|money }}<small>/tháng</small>
+                </div>
+                {% if room.district_name %}
+                    <div class="small text-muted">
+                        <i class="bi bi-map me-1"></i>{{ room.district_name }}
+                    </div>
+                {% endif %}
+            </div>
+            <a href="{{ route('/rooms/' ~ room.id) }}" class="btn-view-room">
+                Xem <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+        </div>
+    </div>
+
+</div>

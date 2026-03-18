@@ -1,0 +1,348 @@
+{% extends 'layouts/base.twig' %}
+{% block title %}{{ room.title }}{% endblock %}
+
+{% block content %}
+<div class="bg-light py-3 border-bottom">
+    <div class="container">
+        <ol class="breadcrumb mb-0 small">
+            <li class="breadcrumb-item"><a href="{{ route('/') }}">Trang chủ</a></li>
+            <li class="breadcrumb-item"><a href="{{ route('/rooms') }}">Phòng trọ</a></li>
+            <li class="breadcrumb-item active">{{ room.title|truncate(40) }}</li>
+        </ol>
+    </div>
+</div>
+
+<div class="container py-4">
+    <div class="row g-4">
+
+        {# ── LEFT ── #}
+        <div class="col-lg-8">
+
+            {# Gallery #}
+            <div class="room-gallery mb-4">
+                {% if images is not empty %}
+                    <div class="gallery-main">
+                        <img src="{{ upload_url ~ images[0].image_path }}"
+                             alt="{{ room.title }}" id="mainImg">
+                    </div>
+                    {% if images|length > 1 %}
+                        <div class="gallery-thumbs">
+                            {% for img in images %}
+                                <div class="gallery-thumb {{ loop.first ? 'active' : '' }}"
+                                     onclick="switchImg('{{ upload_url ~ img.image_path }}', this)">
+                                    <img src="{{ upload_url ~ img.image_path }}" alt="">
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="gallery-main d-flex align-items-center justify-content-center bg-light">
+                        <div class="text-center text-muted py-5">
+                            <i class="bi bi-image fs-1 d-block mb-2"></i>Chưa có ảnh
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            {# Title #}
+            <div class="room-detail-card">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                    <div>
+                        <span class="room-type-tag mb-2">
+                            <i class="bi bi-house-door"></i>
+                            {{ room_types[room.room_type] ?? room.room_type }}
+                        </span>
+                        <h1 class="fs-4 fw-800 mb-1">{{ room.title }}</h1>
+                        <div class="d-flex align-items-center gap-3 text-muted small flex-wrap">
+                            <span><i class="bi bi-geo-alt-fill text-primary me-1"></i>{{ room.address }}</span>
+                            {% if room.district_name %}
+                                <span><i class="bi bi-map me-1"></i>{{ room.district_name }}</span>
+                            {% endif %}
+                            <span><i class="bi bi-eye me-1"></i>{{ room.view_count|number_format }} lượt xem</span>
+                            {% if room.avg_rating > 0 %}
+                                <span class="text-warning">
+                                    <i class="bi bi-star-fill me-1"></i>
+                                    {{ room.avg_rating }} ({{ room.review_count }} đánh giá)
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if auth %}
+                        <button class="btn btn-outline-{{ isFavorite ? 'danger' : 'secondary' }} btn-sm"
+                            onclick="toggleFav(this, {{ room.id }})">
+                            <i class="bi bi-heart{{ isFavorite ? '-fill' : '' }} me-1"></i>
+                            {{ isFavorite ? 'Đã lưu' : 'Lưu' }}
+                        </button>
+                    {% endif %}
+                </div>
+
+                <div class="row g-3 py-3 border-top border-bottom mb-3">
+                    <div class="col-6 col-md-3 text-center">
+                        <div class="fw-800 fs-5 text-primary">{{ room.area }}m²</div>
+                        <div class="small text-muted">Diện tích</div>
+                    </div>
+                    <div class="col-6 col-md-3 text-center">
+                        <div class="fw-800 fs-5">{{ room.max_people }} người</div>
+                        <div class="small text-muted">Tối đa</div>
+                    </div>
+                    <div class="col-6 col-md-3 text-center">
+                        <div class="fw-800 fs-5">Tầng {{ room.floor }}</div>
+                        <div class="small text-muted">/ {{ room.total_floors }} tầng</div>
+                    </div>
+                    <div class="col-6 col-md-3 text-center">
+                        <div class="fw-800 fs-5">{{ room.deposit_months }} tháng</div>
+                        <div class="small text-muted">Tiền cọc</div>
+                    </div>
+                </div>
+
+                <h6 class="fw-700 mb-2"><i class="bi bi-file-text me-2 text-primary"></i>Mô tả</h6>
+                <p class="text-muted">{{ room.description|nl2br }}</p>
+            </div>
+
+            {# Amenities #}
+            <div class="room-detail-card">
+                <h6 class="fw-700 mb-3"><i class="bi bi-stars me-2 text-primary"></i>Tiện ích & Chính sách</h6>
+                {% set amenities = [
+                    ['has_wifi',            'bi-wifi',      'WiFi'],
+                    ['has_ac',              'bi-snow2',     'Điều hòa'],
+                    ['has_parking',         'bi-car-front', 'Gửi xe'],
+                    ['has_kitchen',         'bi-cup-hot',   'Bếp nấu'],
+                    ['has_washing_machine', 'bi-recycle',   'Máy giặt'],
+                    ['has_fridge',          'bi-box',       'Tủ lạnh'],
+                    ['has_private_bath',    'bi-droplet',   'WC riêng'],
+                    ['allow_pet',           'bi-heart',     'Nuôi thú cưng'],
+                    ['allow_cooking',       'bi-fire',      'Nấu ăn']
+                ] %}
+                <div class="amenity-grid">
+                    {% for item in amenities %}
+                        <div class="amenity-item {{ room[item[0]] ? 'yes' : 'no' }}">
+                            <i class="bi {{ item[1] }} amenity-icon"></i>
+                            <span>{{ item[2] }}</span>
+                            <i class="bi bi-{{ room[item[0]] ? 'check-circle-fill' : 'x-circle' }} ms-auto"></i>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            {# Fees #}
+            <div class="room-detail-card">
+                <h6 class="fw-700 mb-3"><i class="bi bi-receipt me-2 text-primary"></i>Chi phí hàng tháng</h6>
+                <table class="table table-sm table-borderless">
+                    <tbody>
+                        <tr>
+                            <td class="text-muted">Tiền phòng</td>
+                            <td class="fw-700 text-primary">{{ room.price|money }}/tháng</td>
+                        </tr>
+                        {% if room.electric_price > 0 %}
+                            <tr>
+                                <td class="text-muted"><i class="bi bi-lightning me-1"></i>Điện</td>
+                                <td>{{ room.electric_price|money }}/kWh</td>
+                            </tr>
+                        {% endif %}
+                        {% if room.water_price > 0 %}
+                            <tr>
+                                <td class="text-muted"><i class="bi bi-droplet me-1"></i>Nước</td>
+                                <td>{{ room.water_price|money }}/m³</td>
+                            </tr>
+                        {% endif %}
+                        {% if room.internet_price > 0 %}
+                            <tr>
+                                <td class="text-muted"><i class="bi bi-wifi me-1"></i>Internet</td>
+                                <td>{{ room.internet_price|money }}/tháng</td>
+                            </tr>
+                        {% endif %}
+                        <tr class="table-light fw-600">
+                            <td>Đặt cọc</td>
+                            <td>{{ (room.price * room.deposit_months)|money }} ({{ room.deposit_months }} tháng)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            {# Reviews #}
+            <div class="room-detail-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-700 mb-0">
+                        <i class="bi bi-star me-2 text-warning"></i>Đánh giá ({{ reviews|length }})
+                    </h6>
+                    {% if room.avg_rating > 0 %}
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="fs-4 fw-800 text-warning">{{ room.avg_rating }}</span>
+                            <div>
+                                {{ stars(room.avg_rating) }}
+                                <div class="small text-muted">{{ room.review_count }} đánh giá</div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+
+                {% if auth %}
+                    <div class="bg-light rounded-3 p-3 mb-3">
+                        <h6 class="fw-700 mb-3 small">Viết đánh giá</h6>
+                        <form action="{{ route('/reviews') }}" method="POST">
+                            <input type="hidden" name="room_id" value="{{ room.id }}">
+                            <div class="mb-2">
+                                <div class="star-rating-input">
+                                    {% for i in range(5,1,-1) %}
+                                        <input type="radio" name="rating" id="star{{ i }}" value="{{ i }}">
+                                        <label for="star{{ i }}">
+                                            <i class="bi bi-star-fill"></i>
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <textarea name="comment" class="form-control form-control-sm mb-2"
+                                rows="2" placeholder="Nhận xét của bạn..."></textarea>
+                            <button type="submit" class="btn btn-primary btn-sm">Gửi đánh giá</button>
+                        </form>
+                    </div>
+                {% endif %}
+
+                {% if reviews is empty %}
+                    <p class="text-muted small text-center py-3">Chưa có đánh giá nào.</p>
+                {% else %}
+                    {% for rv in reviews %}
+                        <div class="review-card">
+                            <div class="d-flex gap-3">
+                                <div class="user-avatar-sm flex-shrink-0">
+                                    {{ rv.user_name|slice(0,1)|upper }}
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <div class="fw-600 small">{{ rv.user_name }}</div>
+                                            {{ stars(rv.rating) }}
+                                        </div>
+                                        <div class="small text-muted">
+                                            {{ rv.created_at|date('d/m/Y') }}
+                                        </div>
+                                    </div>
+                                    {% if rv.comment %}
+                                        <p class="mb-0 mt-1 small">{{ rv.comment }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            {# Related #}
+            {% if related is not empty %}
+                <div>
+                    <h6 class="fw-700 mb-3">
+                        <i class="bi bi-grid me-2 text-primary"></i>Phòng tương tự
+                    </h6>
+                    <div class="row g-3">
+                        {% for relRoom in related %}
+                            <div class="col-sm-6">
+                                {% include 'components/_room_card.twig' with { room: relRoom } %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        {# ── RIGHT ── #}
+        <div class="col-lg-4">
+
+            <div class="detail-price-box mb-3">
+                <div class="detail-price-big">{{ room.price|money }}</div>
+                <div class="opacity-75 small">/ tháng</div>
+                <div class="mt-2 d-flex align-items-center gap-2">
+                    {% if room.is_available %}
+                        <span class="badge bg-success">
+                            <i class="bi bi-check-circle me-1"></i>Còn trống
+                        </span>
+                    {% else %}
+                        <span class="badge bg-secondary">Đã cho thuê</span>
+                    {% endif %}
+                    {% if room.available_from %}
+                        <span class="small opacity-75">Từ {{ room.available_from|date('d/m/Y') }}</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="contact-card mb-3">
+                <h6 class="fw-700 mb-3">
+                    <i class="bi bi-person-circle me-2"></i>Liên hệ chủ trọ
+                </h6>
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <div class="user-avatar-sm" style="width:48px;height:48px;font-size:20px;">
+                        {{ (room.contact_name ?? room.landlord_name ?? 'C')|slice(0,1)|upper }}
+                    </div>
+                    <div>
+                        <div class="fw-700 text-white">
+                            {{ room.contact_name ?? room.landlord_name }}
+                        </div>
+                        <div class="text-white-50 small">Chủ phòng trọ</div>
+                    </div>
+                </div>
+
+                <a href="tel:{{ room.contact_phone }}" class="btn btn-primary w-100 fw-600 mb-3">
+                    <i class="bi bi-telephone-fill me-2"></i>{{ room.contact_phone }}
+                </a>
+
+                <hr style="border-color:rgba(255,255,255,.2)">
+                <p class="text-white-50 small mb-3">Hoặc gửi tin nhắn:</p>
+
+                <form action="{{ route('/contact') }}" method="POST">
+                    <input type="hidden" name="room_id" value="{{ room.id }}">
+                    <div class="mb-2">
+                        <input type="text" name="sender_name" class="form-control form-control-sm"
+                            placeholder="Họ và tên *" required value="{{ auth.name ?? '' }}">
+                    </div>
+                    <div class="mb-2">
+                        <input type="tel" name="sender_phone" class="form-control form-control-sm"
+                            placeholder="Số điện thoại">
+                    </div>
+                    <div class="mb-2">
+                        <input type="email" name="sender_email" class="form-control form-control-sm"
+                            placeholder="Email" value="{{ auth.email ?? '' }}">
+                    </div>
+                    <div class="mb-2">
+                        <textarea name="message" class="form-control form-control-sm" rows="3" required
+                            >Xin chào, tôi quan tâm đến phòng "{{ room.title|truncate(40) }}". Vui lòng liên hệ!</textarea>
+                    </div>
+                    <button type="submit" class="btn btn-light w-100 fw-700" style="color:var(--secondary)">
+                        <i class="bi bi-send me-2"></i>Gửi liên hệ
+                    </button>
+                </form>
+            </div>
+
+            <div class="room-detail-card">
+                <div class="d-flex gap-2">
+                    <button onclick="navigator.share
+                        ? navigator.share({title:'{{ room.title|e('js') }}',url:location.href})
+                        : (navigator.clipboard.writeText(location.href), showToast('Đã copy link!','success'))"
+                        class="btn btn-outline-secondary btn-sm flex-fill">
+                        <i class="bi bi-share me-1"></i>Chia sẻ
+                    </button>
+                    <button onclick="window.print()"
+                        class="btn btn-outline-secondary btn-sm flex-fill">
+                        <i class="bi bi-printer me-1"></i>In
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function switchImg(src, el) {
+    document.getElementById('mainImg').src = src;
+    document.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+}
+document.addEventListener('keydown', e => {
+    const thumbs = [...document.querySelectorAll('.gallery-thumb')];
+    const idx = thumbs.findIndex(t => t.classList.contains('active'));
+    if (e.key === 'ArrowRight' && idx < thumbs.length - 1) thumbs[idx + 1].click();
+    if (e.key === 'ArrowLeft'  && idx > 0)                 thumbs[idx - 1].click();
+});
+</script>
+{% endblock %}

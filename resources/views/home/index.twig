@@ -1,0 +1,243 @@
+{% extends 'layouts/base.twig' %}
+{% block title %}Tìm phòng trọ uy tín tại Cần Thơ{% endblock %}
+
+{% block content %}
+
+{# ── HERO ── #}
+<section class="hero-section">
+    <div class="hero-floating-card card-1">
+        <div class="d-flex align-items-center gap-2">
+            <div class="stat-icon-box green" style="width:36px;height:36px;font-size:16px;border-radius:8px;">
+                <i class="bi bi-check-lg"></i>
+            </div>
+            <div>
+                <div class="text-white fw-700 small">{{ stats.approved }}+ Phòng</div>
+                <div class="text-white-50" style="font-size:11px">Đã xác thực</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="hero-floating-card card-2">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-star-fill text-warning"></i>
+            <div>
+                <div class="text-white fw-700 small">4.8 / 5</div>
+                <div class="text-white-50" style="font-size:11px">Đánh giá trung bình</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container position-relative" style="z-index:2">
+        <div class="row justify-content-center">
+            <div class="col-lg-9 text-center">
+                <span class="tag-pill mb-3 d-inline-block">🏡 Nền tảng tìm phòng trọ #1 Cần Thơ</span>
+                <h1 class="hero-title mb-3">
+                    Tìm phòng trọ <span>ưng ý</span><br>
+                    tại <span>Cần Thơ</span> — Nhanh & Uy tín
+                </h1>
+                <p class="hero-subtitle mb-4">
+                    Kết nối chủ trọ và người thuê. Hàng trăm phòng đã được xác thực.<br>
+                    Tìm kiếm theo đường, phường, quận — chỉ trong vài giây.
+                </p>
+
+                <div class="hero-search-box">
+                    <form action="{{ route('/rooms') }}" method="GET">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-12 col-md-5">
+                                <div class="input-group">
+                                    <span class="input-group-text border-0 bg-transparent pe-0">
+                                        <i class="bi bi-search text-muted"></i>
+                                    </span>
+                                    <input type="text" name="keyword"
+                                        class="form-control border-0 shadow-none ps-1"
+                                        placeholder="Tên đường, khu vực..." autocomplete="off">
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <select name="district_id" class="form-select border-0 shadow-none">
+                                    <option value="">Quận / Huyện</option>
+                                    {% for district in districts %}
+                                        <option value="{{ district.id }}">{{ district.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <select name="room_type" class="form-select border-0 shadow-none">
+                                    <option value="">Loại phòng</option>
+                                    {% for key, label in room_types %}
+                                        <option value="{{ key }}">{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-2">
+                                <button type="submit" class="btn-search-main w-100">
+                                    <i class="bi bi-search me-1"></i>Tìm ngay
+                                </button>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-3 mt-3 flex-wrap justify-content-center">
+                            <a href="{{ route('/rooms') }}?has_wifi=1" class="text-muted small quick-link">
+                                <i class="bi bi-wifi me-1"></i>Có WiFi
+                            </a>
+                            <a href="{{ route('/rooms') }}?has_ac=1" class="text-muted small quick-link">
+                                <i class="bi bi-snow2 me-1"></i>Máy lạnh
+                            </a>
+                            <a href="{{ route('/rooms') }}?allow_pet=1" class="text-muted small quick-link">
+                                🐾 Nuôi thú cưng
+                            </a>
+                            <a href="{{ route('/rooms') }}?price_max=2000000" class="text-muted small quick-link">
+                                <i class="bi bi-tag me-1"></i>Dưới 2 triệu
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{# ── STATS BAR ── #}
+<div class="stats-row">
+    <div class="container">
+        <div class="row g-0">
+            <div class="col-6 col-md-3">
+                <div class="stat-item">
+                    <div class="stat-number">{{ stats.approved }}+</div>
+                    <div class="stat-label"><i class="bi bi-house me-1"></i>Phòng đã duyệt</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-item">
+                    <div class="stat-number">{{ stats.users }}+</div>
+                    <div class="stat-label"><i class="bi bi-people me-1"></i>Người dùng</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-item">
+                    <div class="stat-number">5</div>
+                    <div class="stat-label"><i class="bi bi-map me-1"></i>Quận / Huyện</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-item">
+                    <div class="stat-number">100%</div>
+                    <div class="stat-label"><i class="bi bi-shield-check me-1"></i>Đã xác thực</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ── QUICK AREAS ── #}
+<section class="py-5 bg-white">
+    <div class="container">
+        <div class="text-center mb-4">
+            <span class="section-label">📍 Tìm theo khu vực</span>
+            <h2 class="section-title">Các quận phổ biến tại Cần Thơ</h2>
+        </div>
+        <div class="row g-3 justify-content-center">
+            {% set area_icons = ['🏙️','🌿','🌊','🏘️','🌾'] %}
+            {% for i, district in districts %}
+                <div class="col-6 col-sm-4 col-lg" style="max-width:200px">
+                    <a href="{{ route('/rooms') }}?district_id={{ district.id }}" class="area-card">
+                        <div class="area-icon">{{ area_icons[i % 5] }}</div>
+                        <div class="area-name">Q. {{ district.name }}</div>
+                        <div class="area-count">Tìm phòng →</div>
+                    </a>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+{# ── FEATURED ROOMS ── #}
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mb-4">
+            <div>
+                <span class="section-label">🏠 Nổi bật</span>
+                <h2 class="section-title mb-0">Phòng trọ nổi bật hôm nay</h2>
+            </div>
+            <a href="{{ route('/rooms') }}" class="btn btn-outline-primary fw-600">
+                Xem tất cả <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+        </div>
+
+        <div class="category-pills mb-4">
+            <a href="{{ route('/rooms') }}" class="cat-pill active">Tất cả</a>
+            {% for key, label in room_types %}
+                <a href="{{ route('/rooms') }}?room_type={{ key }}" class="cat-pill">{{ label }}</a>
+            {% endfor %}
+        </div>
+
+        {% if featured is empty %}
+            <div class="empty-state">
+                <div class="icon"><i class="bi bi-house-slash"></i></div>
+                <h5>Chưa có phòng nào</h5>
+                <a href="{{ route('/register') }}" class="btn btn-primary">Đăng ký để đăng tin</a>
+            </div>
+        {% else %}
+            <div class="row g-3">
+                {% for room in featured %}
+                    <div class="col-sm-6 col-lg-4 col-xl-3">
+                        {% include 'components/_room_card.twig' with { room: room } %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+{# ── HOW IT WORKS ── #}
+<section class="py-5 bg-white">
+    <div class="container">
+        <div class="text-center mb-5">
+            <span class="section-label">⚡ Quy trình</span>
+            <h2 class="section-title">Cách thức hoạt động</h2>
+            <p class="section-subtitle">Đơn giản — Nhanh chóng — Tin cậy</p>
+        </div>
+        <div class="row g-4 text-center">
+            {% set steps = [
+                {icon:'bi-search',      title:'Tìm kiếm',       desc:'Nhập địa chỉ hoặc khu vực. Lọc theo giá, tiện ích.',         color:'orange'},
+                {icon:'bi-eye',         title:'Xem thông tin',   desc:'Xem đầy đủ ảnh, tiện ích, giá điện nước, chính sách.',      color:'blue'},
+                {icon:'bi-telephone',   title:'Liên hệ chủ trọ', desc:'Gửi tin nhắn hoặc gọi điện trực tiếp cho chủ trọ.',         color:'green'},
+                {icon:'bi-house-check', title:'Chuyển vào ở',    desc:'Xem thực tế và chuyển vào phòng. Đánh giá giúp cộng đồng.', color:'red'}
+            ] %}
+            {% for i, step in steps %}
+                <div class="col-6 col-md-3">
+                    <div class="p-3">
+                        <div class="stat-icon-box {{ step.color }} mx-auto mb-3"
+                             style="width:60px;height:60px;font-size:26px;border-radius:16px;">
+                            <i class="bi {{ step.icon }}"></i>
+                        </div>
+                        <div class="badge rounded-pill bg-light text-muted mb-2">Bước {{ i + 1 }}</div>
+                        <h5 class="fw-700 mb-2">{{ step.title }}</h5>
+                        <p class="text-muted small mb-0">{{ step.desc }}</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+{# ── CTA ── #}
+<section class="py-5" style="background:linear-gradient(135deg,var(--secondary),var(--secondary-light))">
+    <div class="container text-center">
+        <h2 class="text-white fw-800 mb-3">Bạn có phòng muốn cho thuê?</h2>
+        <p class="text-white-50 mb-4">Đăng tin miễn phí, tiếp cận hàng nghìn người tìm thuê mỗi ngày</p>
+        <div class="d-flex gap-3 justify-content-center flex-wrap">
+            <a href="{{ route('/register') }}?role=landlord" class="btn btn-primary btn-lg px-5 fw-600">
+                <i class="bi bi-plus-circle me-2"></i>Đăng tin miễn phí
+            </a>
+            <a href="{{ route('/rooms') }}" class="btn btn-outline-light btn-lg px-5 fw-600">
+                Xem phòng trọ
+            </a>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block scripts %}
+<style>.quick-link:hover { color: var(--primary) !important; }</style>
+{% endblock %}

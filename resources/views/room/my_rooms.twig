@@ -1,0 +1,89 @@
+{% extends 'layouts/base.twig' %}
+{% block title %}Phòng của tôi{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <div>
+            <h4 class="fw-800 mb-1"><i class="bi bi-house me-2"></i>Phòng của tôi</h4>
+            <p class="text-muted mb-0">{{ rooms|length }} tin đăng</p>
+        </div>
+        <a href="{{ route('/rooms/create') }}" class="btn btn-primary fw-600">
+            <i class="bi bi-plus-lg me-2"></i>Đăng tin mới
+        </a>
+    </div>
+
+    {% if rooms is empty %}
+        <div class="empty-state">
+            <div class="icon"><i class="bi bi-house-add"></i></div>
+            <h5>Bạn chưa đăng tin nào</h5>
+            <p>Bắt đầu đăng tin để tiếp cận hàng ngàn người thuê tại Cần Thơ.</p>
+            <a href="{{ route('/rooms/create') }}" class="btn btn-primary">Đăng tin ngay</a>
+        </div>
+    {% else %}
+        <div class="row g-3">
+            {% for r in rooms %}
+                {% set si = room_status[r.status] ?? {label: r.status, class: 'secondary'} %}
+                <div class="col-12">
+                    <div class="room-detail-card p-3">
+                        <div class="d-flex gap-3 flex-wrap align-items-start">
+                            {% if r.primary_image %}
+                                <img src="{{ upload_url ~ r.primary_image }}"
+                                     style="width:110px;height:80px;object-fit:cover;border-radius:10px;flex-shrink:0">
+                            {% else %}
+                                <div class="bg-light rounded d-flex align-items-center justify-content-center flex-shrink-0"
+                                     style="width:110px;height:80px">
+                                    <i class="bi bi-image text-muted fs-4"></i>
+                                </div>
+                            {% endif %}
+
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
+                                    <div>
+                                        <h6 class="fw-700 mb-1">{{ r.title }}</h6>
+                                        <div class="small text-muted mb-2">
+                                            <i class="bi bi-geo-alt me-1 text-primary"></i>{{ r.address }}
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                                            <span class="fw-800 text-primary">{{ r.price|money }}/tháng</span>
+                                            <span class="status-badge {{ r.status }}">{{ si.label }}</span>
+                                            <span class="small text-muted">{{ r.created_at|date('d/m/Y') }}</span>
+                                        </div>
+                                        {% if r.status == 'pending' %}
+                                            <div class="alert alert-warning py-1 px-2 mt-2 mb-0 small border-0 rounded-2">
+                                                <i class="bi bi-clock me-1"></i>Đang chờ admin duyệt, vui lòng chờ trong 24h.
+                                            </div>
+                                        {% elseif r.status == 'rejected' %}
+                                            <div class="alert alert-danger py-1 px-2 mt-2 mb-0 small border-0 rounded-2">
+                                                <i class="bi bi-x-circle me-1"></i>Tin bị từ chối. Chỉnh sửa và đăng lại.
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="d-flex gap-2 flex-wrap">
+                                        {% if r.status == 'approved' %}
+                                            <a href="{{ route('/rooms/' ~ r.id) }}"
+                                               class="btn btn-sm btn-outline-primary" target="_blank">
+                                                <i class="bi bi-eye me-1"></i>Xem
+                                            </a>
+                                        {% endif %}
+                                        <a href="{{ route('/rooms/' ~ r.id ~ '/edit') }}"
+                                           class="btn btn-sm btn-outline-secondary">
+                                            <i class="bi bi-pencil me-1"></i>Sửa
+                                        </a>
+                                        <form action="{{ route('/rooms/' ~ r.id ~ '/delete') }}" method="POST"
+                                              onsubmit="return confirm('Xóa tin này?')">
+                                            <button class="btn btn-sm btn-outline-danger">
+                                                <i class="bi bi-trash me-1"></i>Xóa
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

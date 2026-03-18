@@ -1,0 +1,113 @@
+{% extends 'layouts/base.twig' %}
+{% block title %}Hồ sơ của tôi{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <div class="room-detail-card">
+                <h5 class="fw-800 mb-4">
+                    <i class="bi bi-person-circle me-2 text-primary"></i>Hồ sơ của tôi
+                </h5>
+
+                <form action="{{ route('/profile') }}" method="POST" enctype="multipart/form-data">
+
+                    <div class="text-center mb-4">
+                        <div class="user-avatar-sm mx-auto mb-2" id="avatarBox"
+                             style="width:80px;height:80px;font-size:32px;border-radius:50%;cursor:pointer;"
+                             onclick="document.getElementById('avatarInput').click()">
+                            {% if user.avatar %}
+                                <img src="{{ upload_url ~ user.avatar }}" alt=""
+                                     style="width:100%;height:100%;object-fit:cover;border-radius:50%">
+                            {% else %}
+                                <span>{{ user.name|slice(0,1)|upper }}</span>
+                            {% endif %}
+                        </div>
+                        <input type="file" name="avatar" id="avatarInput" accept="image/*"
+                               style="display:none" onchange="previewAvatar(this)">
+                        <div class="small text-muted">Click để đổi ảnh đại diện</div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-600">Họ và tên</label>
+                            <input type="text" name="name"
+                                   class="form-control {{ errors.name is defined ? 'is-invalid' : '' }}"
+                                   value="{{ user.name }}" required>
+                            {% if errors.name is defined %}
+                                <div class="invalid-feedback">{{ errors.name }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-600">Số điện thoại</label>
+                            <input type="tel" name="phone" class="form-control"
+                                   value="{{ user.phone ?? '' }}">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-600">Email</label>
+                            <input type="email" class="form-control bg-light"
+                                   value="{{ user.email }}" disabled>
+                            <div class="form-text">Email không thể thay đổi.</div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-600">Vai trò</label>
+                            <input type="text" class="form-control bg-light" disabled
+                                value="{{ user.role == 'admin' ? 'Quản trị viên' : (user.role == 'landlord' ? 'Chủ trọ' : 'Người thuê') }}">
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+                    <h6 class="fw-700 mb-3">Đổi mật khẩu</h6>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-600">Mật khẩu hiện tại</label>
+                            <input type="password" name="current_password"
+                                   class="form-control {{ errors.current_password is defined ? 'is-invalid' : '' }}"
+                                   placeholder="••••••••">
+                            {% if errors.current_password is defined %}
+                                <div class="invalid-feedback">{{ errors.current_password }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-600">Mật khẩu mới</label>
+                            <input type="password" name="new_password"
+                                   class="form-control {{ errors.new_password is defined ? 'is-invalid' : '' }}"
+                                   placeholder="••••••••" minlength="6">
+                            {% if errors.new_password is defined %}
+                                <div class="invalid-feedback">{{ errors.new_password }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-600">Xác nhận mật khẩu</label>
+                            <input type="password" name="confirm_new_password"
+                                   class="form-control" placeholder="••••••••">
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary fw-600 px-4">
+                            <i class="bi bi-check-lg me-2"></i>Lưu thay đổi
+                        </button>
+                        <a href="{{ route('/dashboard') }}" class="btn btn-outline-secondary">Hủy</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function previewAvatar(input) {
+    if (!input.files[0]) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        const box = document.getElementById('avatarBox');
+        box.innerHTML = `<img src="${e.target.result}" alt=""
+            style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+    };
+    reader.readAsDataURL(input.files[0]);
+}
+</script>
+{% endblock %}

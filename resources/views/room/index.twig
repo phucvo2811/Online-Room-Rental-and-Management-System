@@ -1,0 +1,258 @@
+{% extends 'layouts/base.twig' %}
+{% block title %}Tìm phòng trọ{% endblock %}
+
+{% block content %}
+<div class="bg-light py-3 border-bottom">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0 small">
+                <li class="breadcrumb-item"><a href="{{ route('/') }}">Trang chủ</a></li>
+                <li class="breadcrumb-item active">Danh sách phòng trọ</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="container py-4">
+    <div class="row g-4">
+
+        {# ── SIDEBAR ── #}
+        <div class="col-lg-3">
+            <div class="filter-sidebar">
+                <div class="filter-title">
+                    <i class="bi bi-funnel me-2 text-primary"></i>Lọc kết quả
+                </div>
+
+                <form id="filterForm" action="{{ route('/rooms') }}" method="GET">
+
+                    <div class="filter-group">
+                        <div class="filter-group-label">🔍 Từ khóa</div>
+                        <input type="text" name="keyword" class="form-control form-control-sm"
+                            placeholder="Tên đường, khu vực..."
+                            value="{{ filters.keyword ?? '' }}">
+                    </div>
+
+                    <div class="filter-group">
+                        <div class="filter-group-label">📍 Quận / Huyện</div>
+                        <select name="district_id" class="form-select form-select-sm"
+                            onchange="loadWards(this.value)">
+                            <option value="">Tất cả quận</option>
+                            {% for d in districts %}
+                                <option value="{{ d.id }}"
+                                    {{ filters.district_id == d.id ? 'selected' : '' }}>
+                                    {{ d.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="filter-group" id="wardGroup"
+                        {{ not filters.district_id ? 'style="display:none"' : '' }}>
+                        <div class="filter-group-label">🏘️ Phường / Xã</div>
+                        <select name="ward_id" class="form-select form-select-sm"
+                            id="wardSelect" onchange="loadStreets(this.value)">
+                            <option value="">Tất cả phường</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group" id="streetGroup" style="display:none">
+                        <div class="filter-group-label">🛣️ Đường / Phố</div>
+                        <select name="street_id" class="form-select form-select-sm" id="streetSelect">
+                            <option value="">Tất cả đường</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <div class="filter-group-label">🏠 Loại phòng</div>
+                        {% for key, label in room_types %}
+                            <label class="filter-checkbox">
+                                <input type="radio" name="room_type" value="{{ key }}"
+                                    {{ filters.room_type == key ? 'checked' : '' }}>
+                                {{ label }}
+                            </label>
+                        {% endfor %}
+                        <label class="filter-checkbox">
+                            <input type="radio" name="room_type" value=""
+                                {{ not filters.room_type ? 'checked' : '' }}>
+                            Tất cả
+                        </label>
+                    </div>
+
+                    <div class="filter-group">
+                        <div class="filter-group-label">💰 Khoảng giá</div>
+                        <div class="d-flex gap-2 align-items-center">
+                            <input type="number" name="price_min" class="form-control form-control-sm"
+                                placeholder="Từ" value="{{ filters.price_min ?? '' }}" min="0">
+                            <span class="text-muted">—</span>
+                            <input type="number" name="price_max" class="form-control form-control-sm"
+                                placeholder="Đến" value="{{ filters.price_max ?? '' }}" min="0">
+                        </div>
+                        <div class="d-flex flex-wrap gap-1 mt-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2"
+                                onclick="setPrice(0,1500000)">≤1.5tr</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2"
+                                onclick="setPrice(0,3000000)">≤3tr</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2"
+                                onclick="setPrice(3000000,5000000)">3–5tr</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2"
+                                onclick="setPrice(5000000,0)">≥5tr</button>
+                        </div>
+                    </div>
+
+                    <div class="filter-group">
+                        <div class="filter-group-label">✨ Tiện ích</div>
+                        {% set amenities = {
+                            'has_wifi':     ['bi-wifi',     'WiFi'],
+                            'has_ac':       ['bi-snow2',    'Máy lạnh'],
+                            'has_parking':  ['bi-car-front','Gửi xe'],
+                            'allow_pet':    ['bi-heart',    'Nuôi thú cưng'],
+                            'allow_cooking':['bi-fire',     'Nấu ăn']
+                        } %}
+                        {% for key, props in amenities %}
+                            <label class="filter-checkbox">
+                                <input type="checkbox" name="{{ key }}" value="1"
+                                    {{ filters[key] is defined and filters[key] ? 'checked' : '' }}>
+                                <i class="bi {{ props[0] }} text-primary"></i> {{ props[1] }}
+                            </label>
+                        {% endfor %}
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-sm fw-600">
+                            <i class="bi bi-search me-1"></i>Tìm kiếm
+                        </button>
+                        <a href="{{ route('/rooms') }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-x-circle me-1"></i>Xóa bộ lọc
+                        </a>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+
+        {# ── MAIN ── #}
+        <div class="col-lg-9">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <div>
+                    <h5 class="fw-700 mb-0">
+                        {% if filters.keyword %}
+                            Kết quả cho "<span class="text-primary">{{ filters.keyword }}</span>"
+                        {% else %}
+                            Danh sách phòng trọ
+                        {% endif %}
+                    </h5>
+                    <div class="text-muted small">{{ total|number_format }} phòng được tìm thấy</div>
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                    <select name="sort" form="filterForm" class="form-select form-select-sm"
+                        style="width:160px" onchange="this.form.submit()">
+                        <option value="newest"     {{ filters.sort == 'newest'     ? 'selected':'' }}>Mới nhất</option>
+                        <option value="price_asc"  {{ filters.sort == 'price_asc'  ? 'selected':'' }}>Giá tăng dần</option>
+                        <option value="price_desc" {{ filters.sort == 'price_desc' ? 'selected':'' }}>Giá giảm dần</option>
+                        <option value="popular"    {{ filters.sort == 'popular'    ? 'selected':'' }}>Phổ biến nhất</option>
+                        <option value="area"       {{ filters.sort == 'area'       ? 'selected':'' }}>Diện tích lớn</option>
+                    </select>
+                    <div class="btn-group">
+                        <button class="btn btn-outline-secondary btn-sm active" id="btnGrid"
+                            onclick="setView('grid')">
+                            <i class="bi bi-grid-3x3-gap"></i>
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" id="btnList"
+                            onclick="setView('list')">
+                            <i class="bi bi-list-ul"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {% if rooms is empty %}
+                <div class="empty-state">
+                    <div class="icon"><i class="bi bi-house-slash"></i></div>
+                    <h5>Không tìm thấy phòng nào</h5>
+                    <p>Hãy thử thay đổi bộ lọc hoặc từ khóa khác.</p>
+                    <a href="{{ route('/rooms') }}" class="btn btn-primary">Xem tất cả phòng</a>
+                </div>
+            {% else %}
+                <div class="row g-3" id="roomsGrid">
+                    {% for room in rooms %}
+                        <div class="col-sm-6 col-xl-4 room-col">
+                            {% include 'components/_room_card.twig' with { room: room } %}
+                        </div>
+                    {% endfor %}
+                </div>
+
+                {% if pages > 1 %}
+                    <nav class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% for i in 1..pages %}
+                                <li class="page-item {{ i == page ? 'active' : '' }}">
+                                    <a class="page-link"
+                                        href="{{ route('/rooms') }}?{{ filters|merge({page: i})|url_encode }}">
+                                        {{ i }}
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% endif %}
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const APP_URL = '{{ app_url }}';
+
+function loadWards(districtId) {
+    const wg = document.getElementById('wardGroup');
+    const ws = document.getElementById('wardSelect');
+    if (!districtId) { wg.style.display = 'none'; return; }
+    wg.style.display = 'block';
+    ws.innerHTML = '<option>Đang tải...</option>';
+    fetch(`${APP_URL}/api/wards?district_id=${districtId}`)
+        .then(r => r.json())
+        .then(data => {
+            ws.innerHTML = '<option value="">Tất cả phường</option>';
+            data.forEach(w => ws.innerHTML += `<option value="${w.id}">${w.name}</option>`);
+        });
+}
+
+function loadStreets(wardId) {
+    const sg = document.getElementById('streetGroup');
+    const ss = document.getElementById('streetSelect');
+    if (!wardId) { sg.style.display = 'none'; return; }
+    sg.style.display = 'block';
+    fetch(`${APP_URL}/api/streets?ward_id=${wardId}`)
+        .then(r => r.json())
+        .then(data => {
+            ss.innerHTML = '<option value="">Tất cả đường</option>';
+            data.forEach(s => ss.innerHTML += `<option value="${s.id}">${s.name}</option>`);
+        });
+}
+
+function setPrice(min, max) {
+    document.querySelector('[name=price_min]').value = min || '';
+    document.querySelector('[name=price_max]').value = max || '';
+}
+
+function setView(type) {
+    const cols = document.querySelectorAll('.room-col');
+    if (type === 'list') {
+        cols.forEach(c => c.className = 'col-12 room-col');
+        document.getElementById('btnList').classList.add('active');
+        document.getElementById('btnGrid').classList.remove('active');
+    } else {
+        cols.forEach(c => c.className = 'col-sm-6 col-xl-4 room-col');
+        document.getElementById('btnGrid').classList.add('active');
+        document.getElementById('btnList').classList.remove('active');
+    }
+}
+
+{% if filters.district_id %}
+window.addEventListener('DOMContentLoaded', () => loadWards({{ filters.district_id }}));
+{% endif %}
+</script>
+{% endblock %}

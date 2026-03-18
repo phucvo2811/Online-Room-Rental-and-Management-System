@@ -1,0 +1,28 @@
+{% extends 'layouts/base.twig' %}
+{% block title %}Phòng yêu thích{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h4 class="fw-800 mb-4">
+        <i class="bi bi-heart-fill text-danger me-2"></i>
+        Phòng yêu thích ({{ favorites|length }})
+    </h4>
+
+    {% if favorites is empty %}
+        <div class="empty-state">
+            <div class="icon"><i class="bi bi-heart-slash"></i></div>
+            <h5>Chưa có phòng yêu thích</h5>
+            <p>Nhấn vào biểu tượng ❤️ trên các phòng để lưu vào đây.</p>
+            <a href="{{ route('/rooms') }}" class="btn btn-primary">Tìm phòng ngay</a>
+        </div>
+    {% else %}
+        <div class="row g-3">
+            {% for room in favorites %}
+                <div class="col-sm-6 col-lg-4 col-xl-3">
+                    {% include 'components/_room_card.twig' with { room: room } %}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

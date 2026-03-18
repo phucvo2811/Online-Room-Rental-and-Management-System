@@ -1,0 +1,71 @@
+{% extends 'layouts/base.twig' %}
+
+{% block content %}
+<div class="d-flex" style="min-height: calc(100vh - 70px)">
+
+    {# ── Admin Sidebar ── #}
+    <aside class="admin-sidebar" style="width: 230px; flex-shrink: 0;">
+        <div class="px-4 py-3" style="border-bottom: 1px solid rgba(255,255,255,.1)">
+            <div class="text-white small fw-700 text-uppercase opacity-50">Admin Panel</div>
+        </div>
+        <ul class="nav flex-column mt-2">
+            <li>
+                <a href="{{ route('/admin') }}"
+                   class="nav-link {{ active_page == 'dashboard' ? 'active' : '' }}">
+                    <i class="bi bi-speedometer2"></i> Dashboard
+                </a>
+            </li>
+            <li>
+                <a href="{{ route('/admin/rooms') }}?status=pending"
+                   class="nav-link {{ active_page == 'rooms' ? 'active' : '' }}">
+                    <i class="bi bi-clock-history"></i> Chờ duyệt
+                    {% if stats.pending > 0 %}
+                        <span class="badge bg-warning text-dark ms-auto">{{ stats.pending }}</span>
+                    {% endif %}
+                </a>
+            </li>
+            <li>
+                <a href="{{ route('/admin/rooms') }}?status=approved" class="nav-link">
+                    <i class="bi bi-house-check"></i> Đã duyệt
+                </a>
+            </li>
+            <li>
+                <a href="{{ route('/admin/rooms') }}" class="nav-link">
+                    <i class="bi bi-grid"></i> Tất cả phòng
+                </a>
+            </li>
+            <li>
+                <a href="{{ route('/admin/users') }}"
+                   class="nav-link {{ active_page == 'users' ? 'active' : '' }}">
+                    <i class="bi bi-people"></i> Người dùng
+                </a>
+            </li>
+            <li>
+                <a href="{{ route('/admin/contacts') }}"
+                   class="nav-link {{ active_page == 'contacts' ? 'active' : '' }}">
+                    <i class="bi bi-envelope"></i> Liên hệ
+                    {% if stats.contacts > 0 %}
+                        <span class="badge bg-danger ms-auto">{{ stats.contacts }}</span>
+                    {% endif %}
+                </a>
+            </li>
+            <li style="border-top:1px solid rgba(255,255,255,.1);margin-top:12px;padding-top:8px;">
+                <a href="{{ route('/') }}" class="nav-link">
+                    <i class="bi bi-house"></i> Trang chủ
+                </a>
+            </li>
+            <li>
+                <a href="{{ route('/logout') }}" class="nav-link" style="color:#f87171!important">
+                    <i class="bi bi-box-arrow-right"></i> Đăng xuất
+                </a>
+            </li>
+        </ul>
+    </aside>
+
+    {# ── Content ── #}
+    <div class="flex-grow-1 admin-content">
+        {% block admin_content %}{% endblock %}
+    </div>
+
+</div>
+{% endblock %}
