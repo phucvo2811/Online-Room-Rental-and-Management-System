@@ -3,8 +3,7 @@
 {% set type_label = room_types[room.room_type] ?? room.room_type %}
 {% set img_url = room.primary_image ? upload_url ~ room.primary_image : null %}
 
-<div class="room-card h-100">
-
+<a href="{{ route('/rooms/' ~ room.id) }}" class="room-card card-clickable">
     <div class="room-card-img">
         {% if img_url %}
             <img src="{{ img_url }}" alt="{{ room.title }}" loading="lazy">
@@ -15,18 +14,24 @@
             </div>
         {% endif %}
 
-        <span class="room-badge">{{ type_label }}</span>
+        <span class="room-type-badge">{{ type_label }}</span>
 
-        {% if not room.is_available %}
-            <span class="room-badge rented" style="top:auto;bottom:12px;">Đã thuê</span>
+        {% if room.is_pro %}
+            <span class="pro-pill">PRO</span>
         {% endif %}
 
         {% if auth %}
-            <button class="fav-btn" onclick="toggleFav(this, {{ room.id }})" title="Yêu thích">
+            <button class="fav-btn" type="button" onclick="event.preventDefault(); toggleFav(this, {{ room.id }});" title="Yêu thích">
                 <i class="bi bi-heart"></i>
             </button>
         {% endif %}
     </div>
+
+    {% set street = room.street_name ?: '' %}
+    {% set ward = room.ward_name ?: '' %}
+    {% set district = room.district_name ?: '' %}
+    {% set room_full_address = room.address ?: (street ~ (street and ward ? ', ' : '') ~ ward ~ (ward and district ? ', ' : '') ~ district) %}
+    {% set room_full_address = room_full_address|trim(', ') %}
 
     <div class="room-card-body">
         <div class="room-type-tag">
@@ -34,14 +39,12 @@
         </div>
 
         <div class="room-title">
-            <a href="{{ route('/rooms/' ~ room.id) }}" class="text-decoration-none text-dark">
-                {{ room.title }}
-            </a>
+            {{ room.title }}
         </div>
 
         <div class="room-address">
-            <i class="bi bi-geo-alt-fill text-primary flex-shrink-0"></i>
-            <span>{{ room.address }}</span>
+            <i class="bi bi-geo-alt-fill"></i>
+            <span>{{ room_full_address ?: 'Địa chỉ chưa cập nhật' }}</span>
         </div>
 
         <div class="room-meta">
@@ -73,21 +76,18 @@
             {% endif %}
         </div>
 
-        <div class="room-price-row mt-auto">
-            <div>
+        <div class="room-price-row">
+            <div class="room-price-col">
                 <div class="room-price">
-                    {{ room.price|money }}<small>/tháng</small>
+                    {{ room.price|money }} <small>/tháng</small>
                 </div>
-                {% if room.district_name %}
-                    <div class="small text-muted">
-                        <i class="bi bi-map me-1"></i>{{ room.district_name }}
-                    </div>
-                {% endif %}
             </div>
-            <a href="{{ route('/rooms/' ~ room.id) }}" class="btn-view-room">
-                Xem <i class="bi bi-arrow-right ms-1"></i>
-            </a>
+            <div class="room-action-col">
+                <button class="btn-view-room" type="button" onclick="event.preventDefault(); window.location.href='{{ route('/rooms/' ~ room.id) }}';">
+                    Xem chi tiết
+                </button>
+            </div>
         </div>
     </div>
 
-</div>
+</a>

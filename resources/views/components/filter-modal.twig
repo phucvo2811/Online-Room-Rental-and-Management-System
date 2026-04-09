@@ -1,0 +1,200 @@
+{#
+  filter-modal.twig — Mobile bottom-sheet filter modal
+  Include in any page that uses filter-bar.twig.
+  Reads / writes to the same hidden inputs as filter-bar.twig via FBar JS.
+  Requires: filters, room_types (or type_labels) vars from controller.
+#}
+
+{# Resolve type map: properties page uses 'type', rooms page uses 'room_type' #}
+{% set type_map = room_types ?? {
+    'boarding_house': 'Nhà trọ',
+    'dormitory':      'KTX',
+    'mini_house':     'Căn hộ Mini',
+    'full_house':     'Nhà nguyên căn',
+    'homestay':       'Homestay'
+} %}
+
+{# ── Backdrop ── #}
+<div class="fmodal-bg" id="fmodalBg" role="dialog" aria-modal="true" aria-label="Bộ lọc"></div>
+
+{# ── Bottom sheet ── #}
+<div class="fmodal-sheet" id="fmodalSheet">
+
+    {# Drag handle + header #}
+    <div class="fmodal-sticky-head">
+        <div class="fmodal-handle"></div>
+        <div class="fmodal-head-row">
+            <span class="fmodal-title"><i class="bi bi-sliders me-2 text-primary"></i>Bộ lọc tìm kiếm</span>
+            <button type="button" class="fmodal-close-btn" onclick="fbarCloseMobile()" aria-label="Đóng">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+    </div>
+
+    {# ── Location / Keyword ── #}
+    <div class="fmodal-section">
+        <div class="fmodal-label">🔍 Khu vực tìm kiếm</div>
+        <div class="fpill fpill-search" style="max-width:100%; border-radius: 14px; padding: 10px 16px;">
+            <span class="fsearch-icon"><i class="bi bi-search"></i></span>
+            <input type="text"
+                   name="m_keyword"
+                   placeholder="Nhập tên đường, khu vực..."
+                   style="font-size:14px; width:100%;"
+                   value="{{ filters.keyword ?? filters.location ?? '' }}">
+        </div>
+    </div>
+
+    {# ── Price ── #}
+    <div class="fmodal-section">
+        <div class="fmodal-label">💰 Khoảng giá</div>
+        <div class="fchip-grid">
+            <div class="fchip {{ not filters.price_min and not filters.price_max ? 'selected' : '' }}"
+                 onclick="fmodalSetPrice('','')">Tất cả</div>
+            <div class="fchip {{ filters.price_max == 1000000 ? 'selected' : '' }}"
+                 onclick="fmodalSetPrice(0, 1000000)">Dưới 1 triệu</div>
+            <div class="fchip {{ filters.price_min == 1000000 and filters.price_max == 3000000 ? 'selected' : '' }}"
+                 onclick="fmodalSetPrice(1000000, 3000000)">1 – 3 triệu</div>
+            <div class="fchip {{ filters.price_min == 3000000 and filters.price_max == 5000000 ? 'selected' : '' }}"
+                 onclick="fmodalSetPrice(3000000, 5000000)">3 – 5 triệu</div>
+            <div class="fchip {{ filters.price_min == 5000000 and not filters.price_max ? 'selected' : '' }}"
+                 onclick="fmodalSetPrice(5000000, '')">Trên 5 triệu</div>
+        </div>
+        <input type="hidden" name="m_price_min" value="{{ filters.price_min ?? '' }}">
+        <input type="hidden" name="m_price_max" value="{{ filters.price_max ?? '' }}">
+    </div>
+
+    {# ── Property / Room Type ── #}
+    <div class="fmodal-section">
+        <div class="fmodal-label">🏠 Loại phòng</div>
+        <div class="fchip-grid">
+            {% for key, label in type_map %}
+                <div class="fchip {{ (filters.type == key or filters.room_type == key) ? 'selected' : '' }}"
+                     data-type="{{ key }}"
+                     onclick="fmodalSetType('{{ key }}', this)">
+                    {{ label }}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    {# ── Area (diện tích) ── #}
+    <div class="fmodal-section">
+        <div class="fmodal-label">📐 Diện tích</div>
+        <div class="fchip-grid">
+            <div class="fchip {{ not filters.area_min and not filters.area_max ? 'selected' : '' }}"
+                 onclick="fmodalSetArea('','')">Tất cả</div>
+            <div class="fchip {{ filters.area_max == 20 ? 'selected' : '' }}"
+                 onclick="fmodalSetArea(0, 20)">Dưới 20m²</div>
+            <div class="fchip {{ filters.area_min == 20 and filters.area_max == 40 ? 'selected' : '' }}"
+                 onclick="fmodalSetArea(20, 40)">20 – 40m²</div>
+            <div class="fchip {{ filters.area_min == 40 and not filters.area_max ? 'selected' : '' }}"
+                 onclick="fmodalSetArea(40, '')">Trên 40m²</div>
+        </div>
+        <input type="hidden" name="m_area_min" value="{{ filters.area_min ?? '' }}">
+        <input type="hidden" name="m_area_max" value="{{ filters.area_max ?? '' }}">
+    </div>
+
+    {# ── Amenities ── #}
+    <div class="fmodal-section">
+        <div class="fmodal-label">✨ Tiện ích</div>
+        <div class="famenity-grid">
+            <div class="famenity-item {{ filters.has_wifi ? 'selected' : '' }}"
+                 data-amenity="has_wifi" onclick="fbarToggleAmenity(this)">
+                <i class="bi bi-wifi text-primary"></i> WiFi
+            </div>
+            <div class="famenity-item {{ filters.has_ac ? 'selected' : '' }}"
+                 data-amenity="has_ac" onclick="fbarToggleAmenity(this)">
+                <i class="bi bi-snow2 text-info"></i> Máy lạnh
+            </div>
+            <div class="famenity-item {{ filters.has_parking ? 'selected' : '' }}"
+                 data-amenity="has_parking" onclick="fbarToggleAmenity(this)">
+                <i class="bi bi-car-front text-secondary"></i> Gửi xe
+            </div>
+            <div class="famenity-item {{ filters.allow_pet ? 'selected' : '' }}"
+                 data-amenity="allow_pet" onclick="fbarToggleAmenity(this)">
+                🐾 Thú cưng
+            </div>
+            <div class="famenity-item {{ filters.allow_cooking ? 'selected' : '' }}"
+                 data-amenity="allow_cooking" onclick="fbarToggleAmenity(this)">
+                <i class="bi bi-fire text-warning"></i> Nấu ăn
+            </div>
+        </div>
+    </div>
+
+    {# ── Status ── #}
+    <div class="fmodal-section">
+        <div class="fmodal-label">🚦 Trạng thái</div>
+        <div class="fchip-grid">
+            <div class="fchip {{ not filters.status ? 'selected' : '' }}"
+                 data-status=""
+                 onclick="fmodalSetStatus('', this)">Tất cả</div>
+            <div class="fchip {{ filters.status == 'available' ? 'selected' : '' }}"
+                 data-status="available"
+                 onclick="fmodalSetStatus('available', this)">✅ Còn phòng</div>
+            <div class="fchip {{ filters.status == 'full' ? 'selected' : '' }}"
+                 data-status="full"
+                 onclick="fmodalSetStatus('full', this)">🔴 Hết phòng</div>
+        </div>
+    </div>
+
+    {# ── Sort ── #}
+    <div class="fmodal-section">
+        <div class="fmodal-label">↕️ Sắp xếp</div>
+        <select name="m_sort" class="form-select" style="border-radius: 12px; font-size: 14px;">
+            <option value="newest"     {{ not filters.sort or filters.sort == 'newest' ? 'selected' : '' }}>Mới nhất</option>
+            <option value="price_asc"  {{ filters.sort == 'price_asc'  ? 'selected' : '' }}>Giá tăng dần</option>
+            <option value="price_desc" {{ filters.sort == 'price_desc' ? 'selected' : '' }}>Giá giảm dần</option>
+            <option value="popular"    {{ filters.sort == 'popular'    ? 'selected' : '' }}>Phổ biến nhất</option>
+            <option value="area"       {{ filters.sort == 'area'       ? 'selected' : '' }}>Diện tích lớn</option>
+        </select>
+    </div>
+
+    {# ── Footer: Reset + Apply ── #}
+    <div class="fmodal-footer">
+        <button type="button" class="fbtn-reset flex-fill" onclick="fbarReset()">
+            <i class="bi bi-x-circle"></i> Đặt lại
+        </button>
+        <button type="button" class="fbtn-apply flex-fill" onclick="fbarApplyModal()">
+            <i class="bi bi-check2-circle"></i> Áp dụng
+        </button>
+    </div>
+</div>
+
+{# ── Modal helper scripts (minimal, inline) ── #}
+<script>
+(function () {
+    // Price chips in modal (single-select)
+    function fmodalSetPrice(min, max) {
+        document.querySelectorAll('#fmodalSheet .fmodal-section .fchip[onclick*="fmodalSetPrice"]').forEach(el => {
+            const m = el.getAttribute('onclick').match(/fmodalSetPrice\(([^,)]+),\s*([^)]+)\)/);
+            if (m) el.classList.toggle('selected', String(m[1]) === String(min) && String(m[2]) === String(max));
+        });
+        const mn = document.querySelector('#fmodalSheet [name="m_price_min"]');
+        const mx = document.querySelector('#fmodalSheet [name="m_price_max"]');
+        if (mn) mn.value = min;
+        if (mx) mx.value = max;
+    }
+    function fmodalSetArea(min, max) {
+        document.querySelectorAll('#fmodalSheet .fmodal-section .fchip[onclick*="fmodalSetArea"]').forEach(el => {
+            const m = el.getAttribute('onclick').match(/fmodalSetArea\(([^,)]+),\s*([^)]+)\)/);
+            if (m) el.classList.toggle('selected', String(m[1]) === String(min) && String(m[2]) === String(max));
+        });
+        const mn = document.querySelector('#fmodalSheet [name="m_area_min"]');
+        const mx = document.querySelector('#fmodalSheet [name="m_area_max"]');
+        if (mn) mn.value = min;
+        if (mx) mx.value = max;
+    }
+    function fmodalSetType(value, el) {
+        document.querySelectorAll('#fmodalSheet .fchip[data-type]').forEach(c => c.classList.remove('selected'));
+        if (el) el.classList.add('selected');
+    }
+    function fmodalSetStatus(value, el) {
+        document.querySelectorAll('#fmodalSheet [data-status]').forEach(c => c.classList.remove('selected'));
+        if (el) el.classList.add('selected');
+    }
+    window.fmodalSetPrice  = fmodalSetPrice;
+    window.fmodalSetArea   = fmodalSetArea;
+    window.fmodalSetType   = fmodalSetType;
+    window.fmodalSetStatus = fmodalSetStatus;
+})();
+</script>

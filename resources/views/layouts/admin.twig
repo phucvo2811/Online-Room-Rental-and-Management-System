@@ -1,5 +1,7 @@
 {% extends 'layouts/base.twig' %}
 
+{% block navbar %}{% endblock %}
+
 {% block content %}
 <div class="d-flex" style="min-height: calc(100vh - 70px)">
 
@@ -18,9 +20,27 @@
             <li>
                 <a href="{{ route('/admin/rooms') }}?status=pending"
                    class="nav-link {{ active_page == 'rooms' ? 'active' : '' }}">
-                    <i class="bi bi-clock-history"></i> Chờ duyệt
+                    <i class="bi bi-clock-history"></i> Chờ duyệt phòng
                     {% if stats.pending > 0 %}
                         <span class="badge bg-warning text-dark ms-auto">{{ stats.pending }}</span>
+                    {% endif %}
+                </a>
+            </li>
+            <li>
+                <a href="{{ route('/admin/properties') }}?status=pending"
+                   class="nav-link {{ active_page == 'properties' ? 'active' : '' }}">
+                    <i class="bi bi-building"></i> Duyệt BĐS
+                    {% if stats.pending_bds > 0 %}
+                        <span class="badge bg-warning text-dark ms-auto">{{ stats.pending_bds }}</span>
+                    {% endif %}
+                </a>
+            </li>
+            <li>
+                <a href="{{ route('/admin/posts') }}?status=inactive"
+                   class="nav-link {{ active_page == 'posts' ? 'active' : '' }}">
+                    <i class="bi bi-megaphone"></i> Duyệt bài đăng
+                    {% if stats.pending_posts > 0 %}
+                        <span class="badge bg-danger ms-auto">{{ stats.pending_posts }}</span>
                     {% endif %}
                 </a>
             </li>
@@ -41,12 +61,39 @@
                 </a>
             </li>
             <li>
+                <a href="{{ route('/admin/landlord-requests') }}?status=pending"
+                   class="nav-link {{ active_page == 'landlord_requests' ? 'active' : '' }}">
+                    <i class="bi bi-person-badge"></i> Yêu cầu chủ trọ
+                    {% if stats.pending_landlord > 0 %}
+                        <span class="badge bg-warning text-dark ms-auto">{{ stats.pending_landlord }}</span>
+                    {% endif %}
+                </a>
+            </li>
+            <li>
+                <a href="{{ route('/admin/banners') }}"
+                   class="nav-link {{ active_page == 'banners' ? 'active' : '' }}">
+                    <i class="bi bi-images"></i> Banner
+                </a>
+            </li>
+            <li>
+                <a href="{{ route('/admin/settings') }}"
+                   class="nav-link {{ active_page == 'settings' ? 'active' : '' }}">
+                    <i class="bi bi-gear"></i> Cài đặt
+                </a>
+            </li>
+            <li>
                 <a href="{{ route('/admin/contacts') }}"
                    class="nav-link {{ active_page == 'contacts' ? 'active' : '' }}">
                     <i class="bi bi-envelope"></i> Liên hệ
                     {% if stats.contacts > 0 %}
                         <span class="badge bg-danger ms-auto">{{ stats.contacts }}</span>
                     {% endif %}
+                </a>
+            </li>
+            <li>
+                <a href="{{ route('/admin/payments') }}"
+                   class="nav-link {{ active_page == 'payments' ? 'active' : '' }}">
+                    <i class="bi bi-credit-card"></i> Thanh toán
                 </a>
             </li>
             <li style="border-top:1px solid rgba(255,255,255,.1);margin-top:12px;padding-top:8px;">

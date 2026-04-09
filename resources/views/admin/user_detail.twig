@@ -1,0 +1,76 @@
+{% extends 'layouts/admin.twig' %}
+{% set active_page = 'users' %}
+{% block title %}Chi tiết người dùng{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-800 mb-0">Chi tiết: {{ user.name }}</h4>
+    <a href="{{ route('/admin/users') }}" class="btn btn-outline-secondary btn-sm">Quay lại</a>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card p-3">
+            <h6>Thông tin</h6>
+            <p><strong>Email:</strong> {{ user.email }}</p>
+            <p><strong>Role:</strong> {{ user.role }}</p>
+            <p><strong>Status:</strong> {{ user.status }}</p>
+            <p><strong>Trusted landlord:</strong> {{ user.is_trusted_landlord ? 'Có' : 'Không' }}</p>
+            <p><strong>Tổng phòng:</strong> {{ user.room_count }}</p>
+            <p><strong>Số report:</strong> {{ user.report_count }}</p>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card p-3">
+            <h6>Hành động</h6>
+            <form action="{{ route('/admin/users/' ~ user.id ~ '/toggle-status') }}" method="POST" class="mb-2">
+                <button class="btn btn-sm {{ user.status == 'banned' ? 'btn-success' : 'btn-danger' }}">
+                    {{ user.status == 'banned' ? 'Mở khóa' : 'Khóa' }}
+                </button>
+            </form>
+            <form action="{{ route('/admin/users/' ~ user.id ~ '/role') }}" method="POST" class="mb-2">
+                <input type="hidden" name="role" value="{{ user.role == 'landlord' ? 'tenant' : 'landlord' }}">
+                <button class="btn btn-sm btn-primary">Chuyển {{ user.role == 'landlord' ? 'tenant' : 'landlord' }}</button>
+            </form>
+            <form action="{{ route('/admin/users/' ~ user.id ~ '/trusted') }}" method="POST">
+                <button class="btn btn-sm btn-outline-success">{{ user.is_trusted_landlord ? 'Bỏ Trusted' : 'Đặt Trusted' }}</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="card p-3 mb-4">
+    <h6>Phòng của user</h6>
+    <div class="row g-2">
+        {% for room in rooms %}
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>{{ room.title }}</div>
+                    <div>{{ room.status }}</div>
+                </div>
+            </div>
+        {% else %}
+            <div class="col-12 text-muted">Chưa có phòng nào.</div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="card p-3 mb-4">
+    <h6>Lịch sử hoạt động</h6>
+    <table class="table table-sm mb-0">
+        <thead><tr><th>Thời gian</th><th>Hành động</th><th>Target</th><th>Detail</th></tr></thead>
+        <tbody>
+            {% for log in activity %}
+                <tr>
+                    <td>{{ log.created_at|date('d/m/Y H:i') }}</td>
+                    <td>{{ log.action }}</td>
+                    <td>{{ log.target_type }} #{{ log.target_id }}</td>
+                    <td>{{ log.metadata|default('{}') }}</td>
+                </tr>
+            {% else %}
+                <tr><td colspan="4">Chưa có hoạt động</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

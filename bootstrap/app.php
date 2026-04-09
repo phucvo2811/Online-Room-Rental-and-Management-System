@@ -38,13 +38,21 @@ if ($appCfg['debug']) {
     $twig->addExtension(new \Twig\Extension\DebugExtension());
 }
 
-$twig->addGlobal('app_name',     $appCfg['name']);
-$twig->addGlobal('app_url',      APP_URL);
-$twig->addGlobal('upload_url',   UPLOAD_URL);
-$twig->addGlobal('room_types',   ROOM_TYPES);
-$twig->addGlobal('room_status',  ROOM_STATUS);
-$twig->addGlobal('session',      $_SESSION);
-$twig->addGlobal('current_year', date('Y'));
+$twig->addGlobal('app_name',           $appCfg['name']);
+$twig->addGlobal('app_url',            APP_URL);
+$twig->addGlobal('upload_url',         UPLOAD_URL);
+$twig->addGlobal('room_types',         ROOM_TYPES);
+$twig->addGlobal('room_status',        ROOM_STATUS);
+$twig->addGlobal('session',            $_SESSION);
+$twig->addGlobal('current_year',       date('Y'));
+$twig->addGlobal('google_maps_api_key', $appCfg['google_maps_api_key'] ?? '');
+define('GEMINI_API_KEY', $appCfg['gemini_api_key'] ?? '');
+
+// VNPay constants
+define('VNP_TMN_CODE',    $appCfg['vnp_tmn_code']    ?? '');
+define('VNP_HASH_SECRET', $appCfg['vnp_hash_secret'] ?? '');
+define('VNP_URL',         $appCfg['vnp_url']         ?? 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html');
+define('VNP_RETURN_URL',  !empty($appCfg['vnp_return_url']) ? $appCfg['vnp_return_url'] : (APP_URL . '/payment/return'));
 
 $twig->addFilter(new \Twig\TwigFilter('money', function (float $n): string {
     return number_format($n, 0, ',', '.') . 'đ';
@@ -79,6 +87,12 @@ $twig->addFunction(new \Twig\TwigFunction('asset', function (string $path): stri
 $twig->addFunction(new \Twig\TwigFunction('route', function (string $path): string {
     return APP_URL . '/' . ltrim($path, '/');
 }, ['is_safe' => ['html']]));
+
+// Ensure CSRF token exists for global use (CPW widget etc.)
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+$twig->addGlobal('csrf_token', $_SESSION['csrf_token']);
 
 $twig->addGlobal('flash', $_SESSION['flash'] ?? []);
 unset($_SESSION['flash']);

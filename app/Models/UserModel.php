@@ -86,4 +86,57 @@ class UserModel extends BaseModel
     {
         Database::execute("UPDATE notifications SET is_read=TRUE WHERE user_id=?", [$userId]);
     }
+
+    public function getAdminUsers(array $filters = []): array
+    {
+        $where = ['1=1'];
+        $params = [];
+        if (!empty($filters['role'])) {
+            $where[] = 'role = ?';
+            $params[] = $filters['role'];
+        }
+        if (!empty($filters['status'])) {
+            $where[] = 'status = ?';
+            $params[] = $filters['status'];
+        }
+        if (!empty($filters['keyword'])) {
+            $where[] = '(name ILIKE ? OR email ILIKE ? OR phone ILIKE ?)';
+            $params[] = "%{$filters['keyword']}%";
+            $params[] = "%{$filters['keyword']}%";
+            $params[] = "%{$filters['keyword']}%";
+        }
+
+        return Database::fetchAll(
+            "SELECT u.*, 
+                (SELECT COUNT(*) FROM rooms WHERE user_id=u.id) AS room_count,
+                (SELECT COUNT(*) FROM reports WHERE user_id=u.id OR room_id IN (SELECT id FROM rooms WHERE user_id=u.id)) AS report_count,
+                (SELECT COUNT(*) FROM subscriptions WHERE user_id=u.id AND status='active') AS active_subscription_count
+             FROM users u
+             WHERE " . implode(' AND ', $where) . " ORDER BY u.created_at DESC",
+            $params
+        );
+    }
+
+    public function setStatus(int $userId, string $status): int
+    {
+        return Database::execute("UPDATE users SET status=? WHERE id=?", [$status, $userId]);
+    }
+
+    public function setRole(int $userId, string $role): int
+    {
+        return Database::execute("UPDATE users SET role=? WHERE id=?", [$role, $userId]);
+    }
+
+    public function setTrustedLandlord(int $userId, bool $trusted): int
+    {
+        return Database::execute("UPDATE users SET is_trusted_landlord=? WHERE id=?", [$trusted ? 'TRUE' : 'FALSE', $userId]);
+    }
+
+    public function getActivityLog(int $userId, int $limit = 50, int $offset = 0): array
+    {
+        return Database::fetchAll(
+            "SELECT al.*, u.name AS user_name FROM activity_logs al LEFT JOIN users u ON al.user_id=u.id WHERE al.user_id=? ORDER BY al.created_at DESC LIMIT ? OFFSET ?",
+            [$userId, $limit, $offset]
+        );
+    }
 }

@@ -1,0 +1,64 @@
+{% extends 'layouts/base.twig' %}
+{% block title %}{{ post.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h3>{{ post.title }}</h3>
+            <p class="text-muted">Dãy: {{ block.name }} - Còn {{ available }} phòng trống</p>
+        </div>
+        <div class="text-end">
+            {% if post.image_url %}
+                <img src="{{ post.image_url }}" alt="" style="max-height:80px; border-radius:8px; object-fit:cover;">
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <p>{{ post.description }}</p>
+            {% if post.price_low or post.price_high %}
+                <p><i class="bi bi-cash-stack me-1"></i>
+                    Giá: {{ post.price_low ? post.price_low|money : 'N/A' }}
+                    {{ post.price_high ? ' - ' ~ post.price_high|money : '' }}
+                </p>
+            {% endif %}
+        </div>
+    </div>
+
+    <h5>Danh sách phòng trong dãy</h5>
+    <style>
+        .room-card-chooser { border:1px solid #e5e7eb; border-radius:12px; transition:.2s; background:#fff; }
+        .room-card-chooser:hover { box-shadow:0 12px 24px rgba(0,0,0,.07); }
+        .room-card-chooser.disabled { opacity:.5; filter: grayscale(.8); pointer-events:none; }
+        .room-card-chooser .room-status { font-size:11px; padding:.15rem .5rem; border-radius:999px; }
+        .room-card-chooser .room-info { font-size:12px; }
+        .room-card-chooser .room-select { text-decoration:none; }
+    </style>
+    <div class="row g-2">
+        {% for r in rooms %}
+            {% set available = r.occupancy_status == 'available' %}
+            <div class="col-6 col-lg-3">
+                <a href="{{ available ? route('/rooms/' ~ r.id) : 'javascript:void(0)' }}"
+                   class="room-card-chooser d-block p-2 {{ available ? '' : 'disabled' }}">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <div class="fw-700">{{ r.name }}</div>
+                        <span class="room-status badge {{ available ? 'bg-success' : 'bg-secondary' }}">
+                            {{ available ? 'Còn phòng' : 'Hết phòng' }}
+                        </span>
+                    </div>
+                    <div class="room-info mb-1">{{ r.room_type_name|default('Loại phòng') }}</div>
+                    <div class="room-info mb-1">{{ r.area }} m²</div>
+                    <div class="room-price fw-bold mb-2">{{ r.price|money }}/tháng</div>
+                    <div class="text-center">
+                        <button class="btn btn-sm {{ available ? 'btn-primary' : 'btn-secondary' }} w-100" type="button" {{ available ? '' : 'disabled' }}>
+                            {{ available ? 'Chọn' : 'Hết' }}
+                        </button>
+                    </div>
+                </a>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

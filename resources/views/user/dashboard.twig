@@ -28,13 +28,22 @@
                     </li>
                     {% if auth.role == 'landlord' %}
                         <li>
-                            <a class="nav-link" href="{{ route('/my-rooms') }}">
-                                <i class="bi bi-house me-2"></i>Phòng của tôi
+                            <a class="nav-link" href="{{ route('/my-blocks') }}">
+                                <i class="bi bi-building me-2"></i>BĐS của tôi
                             </a>
                         </li>
                         <li>
-                            <a class="nav-link" href="{{ route('/rooms/create') }}">
-                                <i class="bi bi-plus-circle me-2"></i>Đăng tin mới
+                            <a class="nav-link" href="{{ route('/blocks/create') }}">
+                                <i class="bi bi-plus-circle me-2"></i>Đăng BĐS mới
+                            </a>
+                        </li>
+                    {% else %}
+                        <li>
+                            <a class="nav-link" href="{{ route('/landlord-request') }}">
+                                <i class="bi bi-person-badge me-2"></i>Đăng ký chủ trọ
+                                {% if landlordStatus == 'pending' %}
+                                    <span class="badge bg-warning text-dark ms-1" style="font-size:.6rem">Chờ duyệt</span>
+                                {% endif %}
                             </a>
                         </li>
                     {% endif %}
@@ -61,37 +70,116 @@
         <div class="col-lg-9">
             <h4 class="fw-800 mb-4">Xin chào, {{ auth.name }}! 👋</h4>
 
+            {# ── Tenant: landlord upgrade banner ── #}
+            {% if auth.role == 'tenant' %}
+                {% if landlordStatus == 'pending' %}
+                    <div class="alert d-flex align-items-center gap-3 rounded-4 mb-4"
+                         style="background:#fef3ec;border:1.5px solid #fed7aa;color:#92400e">
+                        <span style="font-size:1.6rem">⏳</span>
+                        <div class="flex-grow-1">
+                            <div class="fw-700">Yêu cầu làm chủ trọ đang chờ duyệt</div>
+                            <div class="small">Admin sẽ xem xét và phản hồi sớm nhất có thể.</div>
+                        </div>
+                        <a href="{{ route('/landlord-request') }}" class="btn btn-sm btn-outline-warning fw-600 rounded-pill flex-shrink-0">
+                            Xem chi tiết
+                        </a>
+                    </div>
+                {% elseif landlordStatus == 'rejected' %}
+                    <div class="alert d-flex align-items-center gap-3 rounded-4 mb-4"
+                         style="background:#fef2f2;border:1.5px solid #fecaca;color:#991b1b">
+                        <span style="font-size:1.6rem">❌</span>
+                        <div class="flex-grow-1">
+                            <div class="fw-700">Yêu cầu làm chủ trọ đã bị từ chối</div>
+                            <div class="small">Bạn có thể chỉnh sửa thông tin và gửi lại yêu cầu.</div>
+                        </div>
+                        <a href="{{ route('/landlord-request') }}" class="btn btn-sm btn-outline-danger fw-600 rounded-pill flex-shrink-0">
+                            Gửi lại
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="alert d-flex align-items-center gap-3 rounded-4 mb-4"
+                         style="background:#f0fdf4;border:1.5px solid #bbf7d0;color:#14532d">
+                        <span style="font-size:1.6rem">🏠</span>
+                        <div class="flex-grow-1">
+                            <div class="fw-700">Bạn có phòng trọ muốn cho thuê?</div>
+                            <div class="small">Đăng ký làm Chủ trọ để bắt đầu đăng tin và quản lý phòng.</div>
+                        </div>
+                        <a href="{{ route('/landlord-request') }}" class="btn btn-sm btn-success fw-700 rounded-pill flex-shrink-0">
+                            <i class="bi bi-person-badge me-1"></i>Đăng ký ngay
+                        </a>
+                    </div>
+                {% endif %}
+            {% endif %}
+
             {% if auth.role == 'landlord' %}
+                <div class="mb-4">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                        <div>
+                            <h6 class="fw-700 mb-1">Trạng thái PRO</h6>
+                            {% if proStatus.is_pro %}
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-info text-dark">PRO</span>
+                                    <span class="small text-muted">
+                                        Hết hạn sau {{ proStatus.days_left }} ngày ({{ proStatus.ends_at|date('d/m/Y') }})
+                                    </span>
+                                </div>
+                            {% else %}
+                                <span class="badge bg-secondary">Chưa có PRO</span>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <form method="POST" action="{{ route('/landlord/pro') }}" class="d-flex gap-2 align-items-center flex-wrap">
+                                <select name="plan_id" class="form-select form-select-sm" required>
+                                    <option value="">Chọn gói PRO</option>
+                                    {% for plan in proPlans %}
+                                        <option value="{{ plan.id }}">{{ plan.title }} — {{ plan.price|number_format }}đ</option>
+                                    {% endfor %}
+                                </select>
+                                <button class="btn btn-sm btn-success" type="submit">Nâng cấp</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="row g-3 mb-4">
-                    {% set total_rooms    = myRooms|length %}
-                    {% set approved_rooms = myRooms|filter(r => r.status == 'approved')|length %}
-                    {% set pending_rooms  = myRooms|filter(r => r.status == 'pending')|length %}
-                    <div class="col-sm-4">
+                    {% set total_blocks    = myBlocks|length %}
+                    {% set approved_blocks = myBlocks|filter(b => b.status == 'approved')|length %}
+                    {% set pending_blocks  = myBlocks|filter(b => b.status == 'pending')|length %}
+                    <div class="col-sm-3">
                         <div class="dashboard-stat-card">
-                            <div class="stat-icon-box orange"><i class="bi bi-house-door"></i></div>
+                            <div class="stat-icon-box orange"><i class="bi bi-building"></i></div>
                             <div>
-                                <div class="stat-val">{{ total_rooms }}</div>
-                                <div class="stat-lbl">Phòng đã đăng</div>
+                                <div class="stat-val">{{ total_blocks }}</div>
+                                <div class="stat-lbl">BĐS đã đăng</div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-sm-4">
+                    <div class="col-sm-3">
                         <div class="dashboard-stat-card">
                             <div class="stat-icon-box green"><i class="bi bi-check-circle"></i></div>
                             <div>
-                                <div class="stat-val">{{ approved_rooms }}</div>
+                                <div class="stat-val">{{ approved_blocks }}</div>
                                 <div class="stat-lbl">Đã duyệt</div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-sm-4">
+                    <div class="col-sm-3">
                         <div class="dashboard-stat-card">
                             <div class="stat-icon-box blue"><i class="bi bi-clock"></i></div>
                             <div>
-                                <div class="stat-val {{ pending_rooms > 0 ? 'text-warning' : '' }}">
-                                    {{ pending_rooms }}
+                                <div class="stat-val {{ pending_blocks > 0 ? 'text-warning' : '' }}">
+                                    {{ pending_blocks }}
                                 </div>
                                 <div class="stat-lbl">Chờ duyệt</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-3">
+                        <div class="dashboard-stat-card">
+                            <div class="stat-icon-box purple"><i class="bi bi-eye"></i></div>
+                            <div>
+                                <div class="stat-val">{{ viewCount }}</div>
+                                <div class="stat-lbl">Lượt xem</div>
                             </div>
                         </div>
                     </div>
@@ -100,45 +188,198 @@
                 <div class="room-detail-card mb-4">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h6 class="fw-700 mb-0">
-                            <i class="bi bi-house me-2 text-primary"></i>Phòng của tôi
+                            <i class="bi bi-graph-up me-2 text-primary"></i>Quản lý tài chính & hiệu quả
                         </h6>
-                        <a href="{{ route('/rooms/create') }}" class="btn btn-sm btn-primary">
+                        <span class="badge bg-light text-secondary small">Tự động từ dữ liệu phòng</span>
+                    </div>
+
+                    {# ── 4 Auto-calculated stat cards ── #}
+                    <div class="row g-3 mb-3">
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="dashboard-stat-card">
+                                <div class="stat-icon-box primary"><i class="bi bi-currency-dollar"></i></div>
+                                <div>
+                                    <div class="stat-val">{{ financeSummary.monthly_revenue|default(0)|number_format(0, ',', '.') }}đ</div>
+                                    <div class="stat-lbl">Doanh thu/tháng</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="dashboard-stat-card">
+                                <div class="stat-icon-box danger"><i class="bi bi-wallet2"></i></div>
+                                <div>
+                                    <div class="stat-val">{{ financeSummary.total_cost|default(0)|number_format(0, ',', '.') }}đ</div>
+                                    <div class="stat-lbl">Tổng chi phí/tháng</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="dashboard-stat-card">
+                                <div class="stat-icon-box success"><i class="bi bi-cash-stack"></i></div>
+                                <div>
+                                    <div class="stat-val">{{ financeSummary.monthly_profit|default(0)|number_format(0, ',', '.') }}đ</div>
+                                    <div class="stat-lbl">Lợi nhuận/tháng</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="dashboard-stat-card">
+                                <div class="stat-icon-box info"><i class="bi bi-house-check"></i></div>
+                                <div>
+                                    <div class="stat-val">{{ financeSummary.occupancy_rate|default(0) }}%</div>
+                                    <div class="stat-lbl">Tỷ lệ lấp đầy ({{ financeSummary.occupied_rooms|default(0) }}/{{ financeSummary.total_rooms|default(0) }} phòng)</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {# ── Smart suggestions ── #}
+                    {% if financeSummary.suggestions is not empty %}
+                        <div class="mb-3">
+                            {% for tip in financeSummary.suggestions %}
+                                <div class="alert alert-warning py-2 px-3 mb-2 small d-flex align-items-start gap-2" role="alert">
+                                    <i class="bi bi-lightbulb-fill text-warning flex-shrink-0 mt-1"></i>
+                                    <span>{{ tip }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <div class="row g-4">
+                        {# ── Cost breakdown form ── #}
+                        <div class="col-lg-5">
+                            <div class="p-3 bg-light rounded-3">
+                                <h6 class="fw-700 mb-3"><i class="bi bi-sliders me-2 text-primary"></i>Chi phí hàng tháng</h6>
+                                <form method="POST" action="{{ route('/landlord/financials') }}" id="costBreakdownForm">
+                                    <div class="mb-2">
+                                        <label class="form-label small mb-1"><i class="bi bi-lightning-charge text-warning me-1"></i>Tiền điện</label>
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" name="cost_electricity" step="1000" min="0"
+                                                   class="form-control"
+                                                   value="{{ landlordProfile.cost_electricity|default(0)|number_format(0, '', '') }}">
+                                            <span class="input-group-text">đ</span>
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label small mb-1"><i class="bi bi-droplet text-info me-1"></i>Tiền nước</label>
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" name="cost_water" step="1000" min="0"
+                                                   class="form-control"
+                                                   value="{{ landlordProfile.cost_water|default(0)|number_format(0, '', '') }}">
+                                            <span class="input-group-text">đ</span>
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label small mb-1"><i class="bi bi-tools text-secondary me-1"></i>Bảo trì / sửa chữa</label>
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" name="cost_maintenance" step="1000" min="0"
+                                                   class="form-control"
+                                                   value="{{ landlordProfile.cost_maintenance|default(0)|number_format(0, '', '') }}">
+                                            <span class="input-group-text">đ</span>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small mb-1"><i class="bi bi-three-dots text-muted me-1"></i>Chi phí khác</label>
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" name="cost_other" step="1000" min="0"
+                                                   class="form-control"
+                                                   value="{{ landlordProfile.cost_other|default(0)|number_format(0, '', '') }}">
+                                            <span class="input-group-text">đ</span>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary btn-sm w-100">
+                                        <i class="bi bi-save me-1"></i>Lưu chi phí & chụp báo cáo
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        {# ── Room list ── #}
+                        <div class="col-lg-7">
+                            <h6 class="fw-700 mb-2"><i class="bi bi-door-open me-2 text-primary"></i>Trạng thái phòng</h6>
+                            {% if roomListFinance is empty %}
+                                <div class="text-muted small py-3 text-center">Chưa có phòng nào. <a href="{{ route('/blocks/create') }}">Đăng phòng</a></div>
+                            {% else %}
+                                <div class="table-responsive" style="max-height:260px;overflow-y:auto;">
+                                    <table class="table table-sm table-hover mb-0 small">
+                                        <thead class="table-light sticky-top">
+                                            <tr>
+                                                <th>Phòng</th>
+                                                <th>BĐS</th>
+                                                <th class="text-end">Giá/tháng</th>
+                                                <th class="text-center">Trạng thái</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for room in roomListFinance %}
+                                                <tr>
+                                                    <td class="fw-600">{{ room.title|default('Phòng #' ~ room.id)|truncate(25) }}</td>
+                                                    <td class="text-muted">{{ room.property_name|default('—')|truncate(20) }}</td>
+                                                    <td class="text-end">{{ room.price|number_format(0, ',', '.') }}đ</td>
+                                                    <td class="text-center">
+                                                        {% if room.occupancy_status == 'rented' %}
+                                                            <span class="badge bg-success">Đã thuê</span>
+                                                        {% elseif room.occupancy_status == 'maintenance' %}
+                                                            <span class="badge bg-warning text-dark">Bảo trì</span>
+                                                        {% else %}
+                                                            <span class="badge bg-secondary">Trống</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {# ── Revenue trend chart ── #}
+                    {% if monthlyTrend is not empty %}
+                        <div class="mt-4">
+                            <h6 class="fw-700 mb-2"><i class="bi bi-bar-chart-line me-2 text-primary"></i>Xu hướng doanh thu (6 tháng)</h6>
+                            <canvas id="financeTrendChart" height="120"></canvas>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="room-detail-card mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-700 mb-0">
+                            <i class="bi bi-building me-2 text-primary"></i>BĐS của tôi
+                        </h6>
+                        <a href="{{ route('/blocks/create') }}" class="btn btn-sm btn-primary">
                             <i class="bi bi-plus-lg me-1"></i>Đăng mới
                         </a>
                     </div>
-                    {% if myRooms is empty %}
+                    {% if myBlocks is empty %}
                         <div class="empty-state py-4">
-                            <div class="icon"><i class="bi bi-house-add"></i></div>
-                            <h6>Chưa có phòng nào</h6>
-                            <a href="{{ route('/rooms/create') }}" class="btn btn-primary btn-sm">
-                                Đăng tin đầu tiên
+                            <div class="icon"><i class="bi bi-building-add"></i></div>
+                            <h6>Chưa có BĐS nào</h6>
+                            <a href="{{ route('/blocks/create') }}" class="btn btn-primary btn-sm">
+                                Đăng BĐS đầu tiên
                             </a>
                         </div>
                     {% else %}
                         <div class="table-responsive">
                             <table class="table table-sm table-hover mb-0">
                                 <thead>
-                                    <tr><th>Phòng</th><th>Giá</th><th>Trạng thái</th><th></th></tr>
+                                    <tr><th>Bất động sản</th><th>Loại</th><th>Trạng thái</th><th></th></tr>
                                 </thead>
                                 <tbody>
-                                    {% for r in myRooms|slice(0,5) %}
-                                        {% set si = room_status[r.status] ?? {label:r.status,class:'secondary'} %}
+                                    {% for b in myBlocks|slice(0,5) %}
+                                        {% set si = block_status[b.status] ?? {label:b.status,class:'secondary'} %}
                                         <tr>
                                             <td>
-                                                <div class="d-flex align-items-center gap-2">
-                                                    {% if r.primary_image %}
-                                                        <img src="{{ upload_url ~ r.primary_image }}"
-                                                             style="width:44px;height:34px;object-fit:cover;border-radius:6px">
-                                                    {% endif %}
-                                                    <div class="small fw-600">{{ r.title|truncate(40) }}</div>
-                                                </div>
+                                                <div class="small fw-600">{{ b.name|default('(Chưa đặt tên)')|truncate(40) }}</div>
+                                                <div class="small text-muted">{{ b.address|default('')|truncate(35) }}</div>
                                             </td>
-                                            <td class="small fw-700 text-primary">{{ r.price|money }}</td>
+                                            <td class="small text-muted">{{ b.type|replace({'_':' '})|capitalize }}</td>
                                             <td>
-                                                <span class="status-badge {{ r.status }}">{{ si.label }}</span>
+                                                <span class="status-badge {{ b.status }}">{{ si.label }}</span>
                                             </td>
                                             <td>
-                                                <a href="{{ route('/rooms/' ~ r.id ~ '/edit') }}"
+                                                <a href="{{ route('/blocks/' ~ b.id ~ '/edit') }}"
                                                    class="btn btn-sm btn-outline-secondary py-0 px-2">
                                                     <i class="bi bi-pencil"></i>
                                                 </a>
@@ -148,9 +389,9 @@
                                 </tbody>
                             </table>
                         </div>
-                        {% if myRooms|length > 5 %}
-                            <a href="{{ route('/my-rooms') }}" class="btn btn-outline-primary btn-sm mt-2">
-                                Xem tất cả {{ myRooms|length }} phòng
+                        {% if myBlocks|length > 5 %}
+                            <a href="{{ route('/my-blocks') }}" class="btn btn-outline-primary btn-sm mt-2">
+                                Xem tất cả {{ myBlocks|length }} BĐS
                             </a>
                         {% endif %}
                     {% endif %}
@@ -207,4 +448,70 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+{% if monthlyTrend is not empty %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+    const trend = {{ monthlyTrend|json_encode|raw }};
+    const labels  = trend.map(r => r.month_label);
+    const revenue = trend.map(r => parseFloat(r.revenue) || 0);
+    const profit  = trend.map(r => parseFloat(r.profit)  || 0);
+
+    const ctx = document.getElementById('financeTrendChart');
+    if (!ctx) return;
+
+    new Chart(ctx, {
+        data: {
+            labels,
+            datasets: [
+                {
+                    type: 'bar',
+                    label: 'Doanh thu',
+                    data: revenue,
+                    backgroundColor: 'rgba(13,110,253,0.25)',
+                    borderColor: 'rgba(13,110,253,0.8)',
+                    borderWidth: 1,
+                    yAxisID: 'y',
+                },
+                {
+                    type: 'line',
+                    label: 'Lợi nhuận',
+                    data: profit,
+                    borderColor: 'rgba(25,135,84,0.9)',
+                    backgroundColor: 'rgba(25,135,84,0.1)',
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    fill: true,
+                    tension: 0.3,
+                    yAxisID: 'y',
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { position: 'top' },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ' ' + ctx.dataset.label + ': ' +
+                            new Intl.NumberFormat('vi-VN').format(ctx.parsed.y) + 'đ',
+                    },
+                },
+            },
+            scales: {
+                y: {
+                    ticks: {
+                        callback: v => new Intl.NumberFormat('vi-VN', { notation: 'compact' }).format(v) + 'đ',
+                    },
+                },
+            },
+        },
+    });
+})();
+</script>
+{% endif %}
 {% endblock %}

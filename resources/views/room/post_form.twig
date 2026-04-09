@@ -1,0 +1,78 @@
+{% extends 'layouts/base.twig' %}
+{% block title %}{{ mode == 'edit' ? 'Chỉnh sửa bài đăng' : 'Tạo bài đăng' }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="mb-3">
+        <a href="{{ route('/my-posts') }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Quay lại</a>
+    </div>
+    <div class="card">
+        <div class="card-body">
+            <h4>{{ mode == 'edit' ? 'Chỉnh sửa bài đăng' : 'Tạo bài đăng mới' }}</h4>
+            <form method="POST" action="{{ mode == 'create' ? route('/posts/create') : route('/posts/' ~ post.id ~ '/edit') }}">
+                <input type="hidden" name="_csrf" value="{{ csrf }}">
+                <input type="hidden" name="type" value="{{ post.type|default('block') }}">
+                <input type="hidden" name="block_id" value="{{ post.block_id|default('') }}">
+                <input type="hidden" name="room_id" value="{{ post.room_id|default('') }}">
+
+                <div class="mb-3">
+                    <label class="form-label">Nguồn đăng tin</label>
+                    <div class="border rounded p-3 bg-light">
+                        {% if post.type == 'block' and post.block_id %}
+                            {% set source = null %}
+                            {% for b in roomBlocks %}
+                                {% if b.id == post.block_id %}
+                                    {% set source = b %}
+                                {% endif %}
+                            {% endfor %}
+                            <strong>Khu trọ:</strong> {{ source.name|default('N/A') }}<br>
+                            <small>Địa chỉ: {{ source.address|default('N/A') }}</small>
+                        {% elseif post.type == 'room' and post.room_id %}
+                            {% set source = null %}
+                            {% for r in rooms %}
+                                {% if r.id == post.room_id %}
+                                    {% set source = r %}
+                                {% endif %}
+                            {% endfor %}
+                            <strong>Phòng:</strong> {{ source.title|default('N/A') }}<br>
+                            <small>Địa chỉ: {{ source.address|default('N/A') }}</small>
+                        {% else %}
+                            <em>Chưa chọn nguồn tin. Vui lòng quay lại trang chọn và chọn 1 phòng/khu.</em>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Tiêu đề</label>
+                    <input type="text" name="title" class="form-control" value="{{ post.title ?? '' }}">
+                    {% if errors.title %}<div class="text-danger small">{{ errors.title }}</div>{% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Mô tả (tuỳ chọn)</label>
+                    <textarea name="description" class="form-control" rows="4">{{ post.description ?? '' }}</textarea>
+                    {% if errors.description %}<div class="text-danger small">{{ errors.description }}</div>{% endif %}
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Giá từ</label>
+                        <input type="number" name="price_low" class="form-control" value="{{ post.price_low ?? '' }}" min="0">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Giá đến</label>
+                        <input type="number" name="price_high" class="form-control" value="{{ post.price_high ?? '' }}" min="0">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Ảnh đại diện (URL)</label>
+                    <input type="text" name="image_url" class="form-control" value="{{ post.image_url ?? '' }}">
+                </div>
+
+                <button class="btn btn-primary" type="submit">{{ mode == 'edit' ? 'Lưu' : 'Tạo' }}</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

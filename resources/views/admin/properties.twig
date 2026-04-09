@@ -1,0 +1,158 @@
+{% extends 'layouts/admin.twig' %}
+{% set active_page = 'properties' %}
+{% block title %}Duyệt Bất động sản{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h4 class="fw-800 mb-1"><i class="bi bi-building me-2"></i>Quản lý Bất động sản</h4>
+        <p class="text-muted small mb-0">Xét duyệt bất động sản từ chủ trọ trước khi đăng tin</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ route('/admin/properties') }}?status=pending"
+           class="btn btn-sm {{ currentStatus == 'pending' ? 'btn-warning' : 'btn-outline-warning' }}">
+            Chờ duyệt {% if pendingCount > 0 %}<span class="badge bg-dark ms-1">{{ pendingCount }}</span>{% endif %}
+        </a>
+        <a href="{{ route('/admin/properties') }}?status=approved"
+           class="btn btn-sm {{ currentStatus == 'approved' ? 'btn-success' : 'btn-outline-success' }}">
+            Đã duyệt
+        </a>
+        <a href="{{ route('/admin/properties') }}?status=rejected"
+           class="btn btn-sm {{ currentStatus == 'rejected' ? 'btn-danger' : 'btn-outline-danger' }}">
+            Từ chối
+        </a>
+    </div>
+</div>
+
+{% if properties is empty %}
+    <div class="text-center py-5 text-muted">
+        <i class="bi bi-building-check fs-1 d-block mb-2 text-success"></i>
+        <h6>Không có bất động sản nào trong mục này.</h6>
+    </div>
+{% else %}
+    <div class="admin-table">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Tên BĐS</th>
+                        <th>Chủ sở hữu</th>
+                        <th>Loại</th>
+                        <th>Giá</th>
+                        <th>Trạng thái</th>
+                        <th>Ngày tạo</th>
+                        <th>Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in properties %}
+                    <tr>
+                        <td class="text-muted small">{{ p.id }}</td>
+                        <td>
+                            <div class="fw-600">{{ p.name }}</div>
+                            <div class="small text-muted">{{ p.address }}</div>
+                        </td>
+                        <td>
+                            <div class="small fw-600">{{ p.owner_name }}</div>
+                            <div class="small text-muted">{{ p.owner_email }}</div>
+                        </td>
+                        <td>
+                            {% set typeLabels = {
+                                'boarding_house': 'Nhà trọ',
+                                'dormitory': 'Ký túc xá',
+                                'homestay': 'Homestay',
+                                'mini_house': 'Căn hộ Mini',
+                                'full_house': 'Nhà nguyên căn'
+                            } %}
+                            <span class="badge bg-secondary">{{ typeLabels[p.type] ?? p.type }}</span>
+                        </td>
+                        <td class="small">
+                            {% if p.price_min is not null and p.price_max is not null %}
+                                {{ p.price_min|number_format(0, ',', '.') }} - {{ p.price_max|number_format(0, ',', '.') }}đ
+                            {% elseif p.price is not null %}
+                                {{ p.price|number_format(0, ',', '.') }}đ
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if p.status == 'pending' %}
+                                <span class="badge bg-warning text-dark">Chờ duyệt</span>
+                            {% elseif p.status == 'approved' %}
+                                <span class="badge bg-success">Đã duyệt</span>
+                            {% else %}
+                                <span class="badge bg-danger">Từ chối</span>
+                            {% endif %}
+                        </td>
+                        <td class="small text-muted">{{ p.created_at|date('d/m/Y') }}</td>
+                        <td>
+                            <div class="d-flex gap-1 flex-wrap">
+                                <a href="{{ route('/admin/properties/' ~ p.id) }}" target="_blank"
+                                   class="btn btn-sm btn-outline-secondary" title="Xem trước">
+                                    <i class="bi bi-eye"></i> Xem
+                                </a>
+                                {% if p.status == 'pending' %}
+                                    <form action="{{ route('/admin/properties/' ~ p.id ~ '/approve') }}" method="POST">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf }}">
+                                        <button class="btn btn-sm btn-success" title="Duyệt">
+                                            <i class="bi bi-check-lg"></i> Duyệt
+                                        </button>
+                                    </form>
+                                    <button class="btn btn-sm btn-danger" title="Từ chối"
+                                            onclick="showRejectModal({{ p.id }})">
+                                        <i class="bi bi-x-lg"></i> Từ chối
+                                    </button>
+                                {% elseif p.status == 'approved' %}
+                                    <form action="{{ route('/admin/properties/' ~ p.id ~ '/reject') }}" method="POST">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf }}">
+                                        <input type="hidden" name="reason" value="Thu hồi phê duyệt">
+                                        <button class="btn btn-sm btn-outline-danger btn-sm">Thu hồi</button>
+                                    </form>
+                                {% elseif p.status == 'rejected' %}
+                                    <form action="{{ route('/admin/properties/' ~ p.id ~ '/approve') }}" method="POST">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf }}">
+                                        <button class="btn btn-sm btn-outline-success btn-sm">Duyệt lại</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endif %}
+
+<!-- Reject Modal -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <form id="rejectForm" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf }}">
+                <div class="modal-header">
+                    <h6 class="modal-title">Lý do từ chối</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <textarea name="reason" class="form-control" rows="3" placeholder="Nhập lý do từ chối..." required></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-danger btn-sm">Xác nhận từ chối</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showRejectModal(id) {
+    document.getElementById('rejectForm').action = '{{ route("/admin/properties/") }}' + id + '/reject';
+    new bootstrap.Modal(document.getElementById('rejectModal')).show();
+}
+</script>
+{% endblock %}

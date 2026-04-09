@@ -6,6 +6,7 @@ class Router
     private array  $routes     = [];
     private array  $middleware = [];
     private string $prefix     = '';
+    
 
     public function get(string $path, string $controller, string $method, array $mw = []): void
     {
@@ -46,7 +47,7 @@ class Router
         $basePath   = parse_url(APP_URL, PHP_URL_PATH) ?? '';
         $uri        = '/' . trim(substr($uri, strlen($basePath)), '/');
         if ($uri === '') $uri = '/';
-
+        
         foreach ($this->routes as $route) {
             if ($route['method'] !== $httpMethod) continue;
             $pattern = '#^' . preg_replace('/\{([a-zA-Z_]+)\}/', '([^/]+)', $route['path']) . '$#';
@@ -65,4 +66,5 @@ class Router
         http_response_code(404);
         echo \App\Core\Container::get('twig')->render('errors/404.twig');
     }
+    
 }

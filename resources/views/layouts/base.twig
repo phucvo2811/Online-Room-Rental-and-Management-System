@@ -8,19 +8,27 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
-    <link href="{{ asset('css/app.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/app.css') }}?v={{ "now"|date("U") }}" rel="stylesheet">
+    {% if session.user_id %}
+    <link href="{{ asset('css/components/chat.css') }}" rel="stylesheet">
+    {% endif %}
     {% block head %}{% endblock %}
 </head>
 <body>
 
 {# ── NAVBAR ── #}
+{% block navbar %}
 <nav class="navbar navbar-expand-lg sticky-top navbar-custom" id="mainNavbar">
     <div class="container">
 
         <a class="navbar-brand d-flex align-items-center gap-2" href="{{ route('/') }}">
-            <div class="brand-icon"><i class="bi bi-house-heart-fill"></i></div>
+            {% if site_logo %}
+                <img src="{{ upload_url ~ site_logo }}" alt="{{ app_name }}" style="height: 38px; object-fit: contain;" />
+            {% else %}
+                <div class="brand-icon"><i class="bi bi-house-heart-fill"></i></div>
+            {% endif %}
             <div>
-                <span class="brand-name">PhòngTrọ</span>
+                <span class="brand-name">{{ app_name|default('PhòngTrọ') }}</span>
                 <span class="brand-city">Cần Thơ</span>
             </div>
         </a>
@@ -31,7 +39,7 @@
 
         <div class="collapse navbar-collapse" id="navMain">
 
-            <form class="nav-search mx-auto d-none d-lg-flex" action="{{ route('/rooms') }}" method="GET">
+            <form class="nav-search mx-auto d-none d-lg-flex" action="{{ route('/properties') }}" method="GET">
                 <div class="nav-search-inner">
                     <i class="bi bi-search"></i>
                     <input type="text" name="keyword" class="form-control border-0 shadow-none"
@@ -43,13 +51,16 @@
 
             <ul class="navbar-nav ms-auto align-items-center gap-1">
 
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ route('/rooms') }}">
-                        <i class="bi bi-grid me-1"></i>Xem phòng
-                    </a>
-                </li>
 
                 {% if session.user_id %}
+
+                    {# Chat icon #}
+                    <li class="nav-item">
+                        <a class="nav-link position-relative" href="{{ route('/chat') }}" title="Tin nhắn">
+                            <i class="bi bi-chat-dots fs-5"></i>
+                            <span class="chat-navbar-badge" style="display:none"></span>
+                        </a>
+                    </li>
 
                     {# Bell #}
                     <li class="nav-item dropdown">
@@ -102,13 +113,13 @@
                             </li>
                             {% if session.user_role in ['landlord','admin'] %}
                                 <li>
-                                    <a class="dropdown-item" href="{{ route('/rooms/create') }}">
+                                    <a class="dropdown-item" href="{{ route('/post') }}">
                                         <i class="bi bi-plus-circle me-2"></i>Đăng tin
                                     </a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item" href="{{ route('/my-rooms') }}">
-                                        <i class="bi bi-house me-2"></i>Phòng của tôi
+                                    <a class="dropdown-item" href="{{ route('/my-blocks') }}">
+                                        <i class="bi bi-building me-2"></i>BĐS của tôi
                                     </a>
                                 </li>
                             {% endif %}
@@ -151,7 +162,7 @@
 
                 {% if session.user_role in ['landlord','admin'] %}
                     <li class="nav-item ms-1">
-                        <a class="btn btn-success btn-sm px-3" href="{{ route('/rooms/create') }}">
+                        <a class="btn btn-success btn-sm px-3" href="{{ route('/post') }}">
                             <i class="bi bi-plus-lg me-1"></i>Đăng tin
                         </a>
                     </li>
@@ -161,6 +172,7 @@
         </div>
     </div>
 </nav>
+{% endblock %}
 
 {# ── FLASH MESSAGES ── #}
 {% for type, message in flash %}
@@ -185,7 +197,7 @@
             <div class="row g-4">
                 <div class="col-lg-4">
                     <div class="d-flex align-items-center gap-2 mb-3">
-                        <div class="brand-icon"><i class="bi bi-house-heart-fill"></i></div>
+                        
                         <div>
                             <span class="brand-name text-white">PhòngTrọ</span>
                             <span class="brand-city text-white opacity-75">Cần Thơ</span>
@@ -232,17 +244,364 @@
         <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
             <span class="text-white-50 small">© {{ current_year }} {{ app_name }}. Bảo lưu mọi quyền.</span>
             <div class="d-flex gap-3">
-                <a href="#" class="text-white-50 small text-decoration-none">Điều khoản</a>
-                <a href="#" class="text-white-50 small text-decoration-none">Bảo mật</a>
+                <a href="{{ route('/terms') }}" class="text-white-50 small text-decoration-none">Điều khoản</a>
+                <a href="{{ route('/privacy') }}" class="text-white-50 small text-decoration-none">Bảo mật</a>
             </div>
         </div>
     </div>
 </footer>
 
+<button id="chatbotToggle" class="chatbot-toggle" title="Mở trợ lý ảo">
+    <i class="bi bi-robot"></i>
+</button>
+
+<div id="aiChatbot" class="ai-chatbot" aria-hidden="true">
+    <div class="ai-chatbot-header d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+            <img src="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/robot.svg" alt="AI" class="avatar">
+            <div>
+                <div class="fw-bold">AI Tư Vấn Phòng Trọ</div>
+                <small style="font-size:.62rem;opacity:.75;letter-spacing:.02em;">Powered by Gemini ✦</small>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button id="chatbotMinimize" class="btn btn-sm btn-light" type="button" title="Thu nhỏ"><i class="bi bi-dash"></i></button>
+            <button id="chatbotClose" class="btn btn-sm btn-light" type="button" title="Đóng"><i class="bi bi-x"></i></button>
+        </div>
+    </div>
+    <div class="ai-chatbot-body" id="aiChatbotBody"></div>
+    <div class="ai-chatbot-footer">
+        <div class="quick-replies" id="chatbotQuickReplies"></div>
+        <form id="chatbotForm" class="d-flex gap-2" onsubmit="return false;">
+            <input id="chatbotInput" type="text" class="form-control" placeholder="Nhập yêu cầu tìm phòng...">
+            <button id="chatbotSend" class="btn btn-primary btn-sm" type="submit">Gửi</button>
+        </form>
+    </div>
+</div>
 <button class="btn-back-top" id="btnBackTop"><i class="bi bi-arrow-up"></i></button>
 
+{% if session.user_id %}
+{# ── Floating Messenger Button ───────────────────────────────────────── #}
+<button id="msgrToggle" class="msgr-toggle chat-navbar-badge-parent" title="Tin nhắn">
+    <i class="bi bi-chat-dots-fill"></i>
+    <span id="msgrBadge" class="msgr-badge chat-navbar-badge" style="display:none"></span>
+</button>
+
+<div id="msgrPanel" class="msgr-panel" style="display:none" onclick="event.stopPropagation()">
+    <div class="msgr-panel-header">
+        <span class="fw-bold" style="font-size:1.05rem">Tin nhắn</span>
+        <a href="{{ route('/chat') }}" class="msgr-open-btn" title="Mở trang nhắn tin">
+            <i class="bi bi-box-arrow-up-right"></i>
+        </a>
+    </div>
+    <div id="msgrList" class="msgr-list">
+        <div class="msgr-loading"><i class="bi bi-arrow-repeat spin me-1"></i>Đang tải…</div>
+    </div>
+    <a href="{{ route('/chat') }}" class="msgr-see-all">Xem tất cả tin nhắn</a>
+</div>
+
+{# ── Chat Popup Widget (CPW) — Messenger-style mini window ─────────────── #}
+<div id="cpw" class="cpw" style="display:none">
+    <div class="cpw-header">
+        <div class="cpw-partner">
+            <div class="cpw-av-wrap">
+                <div class="cpw-av" id="cpwAv"></div>
+                <span class="cpw-online-dot"></span>
+            </div>
+            <div>
+                <div class="cpw-partner-name" id="cpwName">…</div>
+                <div class="cpw-partner-status">Đang hoạt động</div>
+            </div>
+        </div>
+        <div class="cpw-header-actions">
+            <button class="cpw-icon-btn" title="Gọi điện" onclick="alert('Tính năng đang phát triển')">
+                <i class="bi bi-telephone-fill"></i>
+            </button>
+            <button class="cpw-icon-btn" title="Video call" onclick="alert('Tính năng đang phát triển')">
+                <i class="bi bi-camera-video-fill"></i>
+            </button>
+            <button class="cpw-icon-btn" id="cpwMinBtn" title="Thu nhỏ" onclick="cpwToggleMinimize()">
+                <i class="bi bi-dash-lg"></i>
+            </button>
+            <button class="cpw-icon-btn cpw-icon-btn--close" title="Đóng" onclick="cpwClose()">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+    </div>
+    <div class="cpw-body" id="cpwBody">
+        <div id="cpwMessages" class="cpw-loading">
+            <div class="cpw-skel cpw-skel--theirs"></div>
+            <div class="cpw-skel cpw-skel--mine"></div>
+            <div class="cpw-skel cpw-skel--theirs" style="width:38%"></div>
+            <div class="cpw-skel cpw-skel--mine" style="width:50%"></div>
+        </div>
+    </div>
+    <div class="cpw-footer">
+        <div class="cpw-tools">
+            <button class="cpw-tool-btn" title="Âm thanh"><i class="bi bi-mic-fill"></i></button>
+            <button class="cpw-tool-btn" title="Hình ảnh"><i class="bi bi-image"></i></button>
+            <button class="cpw-tool-btn" title="Sticker"><i class="bi bi-emoji-smile"></i></button>
+            <button class="cpw-tool-btn" title="GIF"><span class="cpw-gif-label">GIF</span></button>
+        </div>
+        <div class="cpw-input-wrap">
+            <input id="cpwInput" type="text" class="cpw-input" placeholder="Aa"
+                   onkeydown="cpwKeydown(event)" oninput="cpwShowSend(this)">
+        </div>
+        <button class="cpw-tool-btn cpw-like-btn" onclick="cpwSendOrLike()">
+            <i class="bi bi-hand-thumbs-up-fill" id="cpwSendIcon"></i>
+        </button>
+    </div>
+</div>
+{% endif %}
+
+<script>window.APP_URL = '{{ app_url|default('') }}'; window.UPLOAD_URL = '{{ upload_url }}';</script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{{ asset('js/app.js') }}"></script>
 {% block scripts %}{% endblock %}
+{% if session.user_id %}
+<script>
+const CPW_MY_ID     = {{ session.user_id }};
+const CPW_CSRF      = '{{ csrf_token }}';
+const CPW_SEND_URL  = '{{ route('/chat/send') }}';
+const CPW_OPEN_URL  = '{{ route('/api/chat/open') }}';
+const CPW_POLL_BASE = '{{ app_url }}';
+
+// ── Unread badge (15 s) ──────────────────────────────────────────────────
+(function chatBadge() {
+    async function refresh() {
+        try {
+            const r = await fetch('{{ route('/api/chat/unread') }}');
+            const d = await r.json();
+            document.querySelectorAll('.chat-navbar-badge').forEach(b => {
+                if (d.count > 0) { b.textContent = d.count; b.style.display = ''; }
+                else              { b.style.display = 'none'; }
+            });
+        } catch(_) {}
+    }
+    refresh(); setInterval(refresh, 15000);
+})();
+
+// ── Messenger panel ──────────────────────────────────────────────────────
+(function msgrWidget() {
+    const toggle = document.getElementById('msgrToggle');
+    const panel  = document.getElementById('msgrPanel');
+    const list   = document.getElementById('msgrList');
+    if (!toggle || !panel) return;
+    let loaded = false;
+
+    toggle.addEventListener('click', e => {
+        e.stopPropagation();
+        const open = panel.style.display !== 'none';
+        panel.style.display = open ? 'none' : 'block';
+        if (!open && !loaded) load();
+        // close CPW when panel opens
+        if (!open) {
+            const cpw = document.getElementById('cpw');
+            if (cpw) cpw.style.display = 'none';
+        }
+    });
+    document.addEventListener('click', () => { panel.style.display = 'none'; });
+    panel.addEventListener('click', e => e.stopPropagation());
+    window.closeMsgrPanel = () => { panel.style.display = 'none'; };
+
+    async function load() {
+        try {
+            const r = await fetch('{{ route('/api/chat/conversations') }}');
+            const d = await r.json();
+            loaded = true;
+            render(d.conversations || []);
+        } catch(_) { list.innerHTML = '<div class="msgr-empty">Không thể tải.</div>'; }
+    }
+
+    function render(convs) {
+        if (!convs.length) {
+            list.innerHTML = `<div class="msgr-empty"><i class="bi bi-chat-dots fs-2 d-block mb-2 opacity-25"></i>Chưa có cuộc trò chuyện nào.<br><small>Nhấn "Nhắn tin chủ trọ" trên trang phòng.</small></div>`;
+            return;
+        }
+        list.innerHTML = convs.map(c => {
+            const av  = c.partner_avatar
+                ? `<img src="${UPLOAD_URL}${c.partner_avatar}" class="msgr-av" alt="">`
+                : `<div class="msgr-av-ph">${esc(c.partner_name||'?')[0].toUpperCase()}</div>`;
+            const pre = esc((c.last_message||'Bắt đầu nhắn tin…').slice(0,40));
+            const dot = c.unread_count > 0 ? `<span class="msgr-dot">${c.unread_count}</span>` : '';
+            const cls = c.unread_count > 0 ? 'msgr-item--unread' : '';
+            return `<a href="#" onclick="closeMsgrPanel();openChatWith(${c.partner_id});return false;" class="msgr-item ${cls}">
+                <div class="msgr-av-wrap">${av}</div>
+                <div class="msgr-item-info">
+                    <div class="msgr-item-name">${esc(c.partner_name)}</div>
+                    <div class="msgr-item-prev">${pre}${(c.last_message||'').length>40?'…':''}</div>
+                </div>
+                ${dot}
+            </a>`;
+        }).join('');
+    }
+    function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+})();
+
+// ── Chat Popup Widget (CPW) ──────────────────────────────────────────────
+(function cpwModule() {
+    let convId        = null;
+    let lastMsgId     = 0;
+    let pollTimer     = null;
+    let minimized     = false;
+    let cpwLastUserId = null;
+
+    window.openChatWith = async function(userId) {
+        const widget = document.getElementById('cpw');
+        if (!widget) return;
+        cpwLastUserId = userId;
+        // Close messenger panel and AI chatbot panel to keep corner clean
+        closeMsgrPanel();
+        const aiBot = document.getElementById('aiChatbot');
+        if (aiBot) {
+            aiBot.classList.remove('open');
+            aiBot.classList.add('closed');
+            aiBot.setAttribute('aria-hidden', 'true');
+            const chatbotToggle = document.getElementById('chatbotToggle');
+            if (chatbotToggle) chatbotToggle.style.display = 'flex';
+        }
+        widget.style.display = 'flex';
+        if (minimized) { minimized = false; widget.classList.remove('cpw--minimized'); }
+        // skeleton
+        document.getElementById('cpwMessages').innerHTML =
+            '<div class="cpw-skel cpw-skel--theirs"></div>' +
+            '<div class="cpw-skel cpw-skel--mine"></div>' +
+            '<div class="cpw-skel cpw-skel--theirs" style="width:40%"></div>';
+        try {
+            const r = await fetch(`${CPW_OPEN_URL}/${userId}`);
+            const d = await r.json();
+            if (!d.ok) return;
+            convId    = d.conv.id;
+            lastMsgId = 0;
+            // header
+            document.getElementById('cpwName').textContent = d.conv.partner_name || '…';
+            const avEl = document.getElementById('cpwAv');
+            if (d.conv.partner_avatar) {
+                avEl.innerHTML = `<img src="${UPLOAD_URL}${d.conv.partner_avatar}" alt="">`;
+            } else {
+                avEl.innerHTML = '';
+                avEl.textContent = (d.conv.partner_name||'?')[0].toUpperCase();
+            }
+            // messages
+            const box = document.getElementById('cpwMessages');
+            box.innerHTML = '';
+            (d.messages||[]).forEach(m => { box.appendChild(renderMsg(m)); lastMsgId = Math.max(lastMsgId, +m.id||0); });
+            cpwScroll(false);
+            stopPoll(); startPoll();
+        } catch(e) { console.error(e); }
+    };
+
+    window.cpwClose = function() {
+        document.getElementById('cpw').style.display = 'none';
+        stopPoll(); convId = null;
+    };
+
+    // Click outside CPW or AI chatbot → close them
+    document.addEventListener('click', function(e) {
+        const widget = document.getElementById('cpw');
+        if (widget && widget.style.display !== 'none' && !widget.contains(e.target)) {
+            cpwClose();
+        }
+        const aiBot = document.getElementById('aiChatbot');
+        const aiToggle = document.getElementById('chatbotToggle');
+        if (aiBot && aiBot.classList.contains('open') && !aiBot.contains(e.target) && !(aiToggle && aiToggle.contains(e.target))) {
+            aiBot.classList.remove('open');
+            aiBot.classList.add('closed');
+            aiBot.setAttribute('aria-hidden', 'true');
+            if (aiToggle) aiToggle.style.display = 'flex';
+        }
+    });
+    document.getElementById('cpw').addEventListener('click', e => e.stopPropagation());
+
+    window.cpwToggleMinimize = function() {
+        minimized = !minimized;
+        document.getElementById('cpw').classList.toggle('cpw--minimized', minimized);
+        const icon = document.querySelector('#cpwMinBtn i');
+        if (icon) icon.className = minimized ? 'bi bi-chevron-up' : 'bi bi-dash-lg';
+    };
+
+    window.cpwKeydown   = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend(); } };
+
+    window.cpwShowSend  = input => {
+        const icon = document.getElementById('cpwSendIcon');
+        if (icon) icon.className = input.value.trim() ? 'bi bi-send-fill' : 'bi bi-hand-thumbs-up-fill';
+    };
+
+    window.cpwSendOrLike = () => {
+        const input = document.getElementById('cpwInput');
+        (input && input.value.trim()) ? doSend() : sendContent('👍');
+    };
+
+    // internals
+    function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    function renderMsg(msg) {
+        const isMine = +msg.sender_id === CPW_MY_ID;
+        const row = document.createElement('div');
+        row.className = `cpw-msg-row${isMine ? ' cpw-msg-row--mine' : ''}`;
+        if (msg.id && !String(msg.id).startsWith('tmp')) row.dataset.msgId = msg.id;
+        const text = esc(msg.content||'').replace(/\n/g,'<br>');
+        const av = isMine ? '' : `<div class="cpw-msg-sm-av">${
+            msg.sender_avatar ? `<img src="${UPLOAD_URL}${msg.sender_avatar}" alt="">` : esc((msg.sender_name||'?')[0].toUpperCase())
+        }</div>`;
+        row.innerHTML = `${av}<div class="cpw-bubble ${isMine?'cpw-bubble--mine':'cpw-bubble--theirs'}">${text}</div>`;
+        return row;
+    }
+
+    function cpwScroll(smooth) {
+        const b = document.getElementById('cpwBody');
+        if (b) b.scrollTo({ top: b.scrollHeight, behavior: smooth ? 'smooth' : 'instant' });
+    }
+
+    function startPoll() { pollTimer = setInterval(doPoll, 2000); }
+    function stopPoll()  { clearInterval(pollTimer); pollTimer = null; }
+
+    async function doPoll() {
+        if (!convId || document.hidden) return;
+        try {
+            const r = await fetch(`${CPW_POLL_BASE}/chat/${convId}/poll?after=${lastMsgId}`);
+            const d = await r.json();
+            if (!d.ok || !d.messages?.length) return;
+            const box  = document.getElementById('cpwMessages');
+            const body = document.getElementById('cpwBody');
+            const near = body.scrollHeight - body.scrollTop - body.clientHeight < 80;
+            d.messages.forEach(m => {
+                if (box.querySelector(`[data-msg-id="${m.id}"]`)) { lastMsgId = Math.max(lastMsgId, +m.id); return; }
+                box.appendChild(renderMsg(m));
+                lastMsgId = Math.max(lastMsgId, +m.id);
+            });
+            if (near) cpwScroll(true);
+        } catch(_) {}
+    }
+
+    async function doSend() {
+        const input = document.getElementById('cpwInput');
+        const txt = (input?.value||'').trim();
+        if (!txt || !convId) return;
+        input.value = ''; cpwShowSend(input);
+        await sendContent(txt);
+    }
+
+    async function sendContent(content) {
+        if (!convId) return;
+        const box  = document.getElementById('cpwMessages');
+        const temp = renderMsg({ id:'tmp_'+Date.now(), sender_id:CPW_MY_ID, content, sender_name:'', sender_avatar:null });
+        const bbl  = temp.querySelector('.cpw-bubble');
+        bbl.classList.add('cpw-bubble--sending');
+        box.appendChild(temp); cpwScroll(true);
+        try {
+            const fd = new FormData();
+            fd.append('conversation_id', convId);
+            fd.append('content', content);
+            fd.append('csrf_token', CPW_CSRF);
+            const r = await fetch(CPW_SEND_URL, { method:'POST', body:fd });
+            const d = await r.json();
+            if (d.ok) { bbl.classList.remove('cpw-bubble--sending'); temp.dataset.msgId = d.message.id; lastMsgId = Math.max(lastMsgId, +d.message.id); }
+            else { bbl.classList.add('cpw-bubble--failed'); }
+        } catch(_) { bbl.classList.add('cpw-bubble--failed'); }
+    }
+})();
+</script>
+{% endif %}
 </body>
 </html>

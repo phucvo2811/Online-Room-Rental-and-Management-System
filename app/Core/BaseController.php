@@ -2,6 +2,7 @@
 namespace App\Core;
 
 use Twig\Environment;
+use App\Core\Database;
 
 abstract class BaseController
 {
@@ -10,10 +11,21 @@ abstract class BaseController
     public function __construct()
     {
         $this->twig = Container::get('twig');
+
+        $settingsRows = Database::fetchAll('SELECT key, value FROM settings');
+        $settings     = array_reduce($settingsRows, fn($carry, $row) => array_merge($carry, [$row['key'] => $row['value']]), []);
+
+        if (!empty($settings['site_name'])) {
+            $this->twig->addGlobal('app_name', $settings['site_name']);
+        }
+        $this->twig->addGlobal('site_logo', $settings['site_logo'] ?? null);
     }
 
     protected function view(string $template, array $data = []): void
     {
+        if (!headers_sent()) {
+            header('Content-Type: text/html; charset=utf-8', true);
+        }
         $data['auth'] = $this->currentUser();
         echo $this->twig->render($template . '.twig', $data);
     }
@@ -105,16 +117,37 @@ abstract class BaseController
     protected function uploadImages(string $field = 'images'): array
     {
         $uploaded = [];
-        if (empty($_FILES[$field]['name'][0])) return $uploaded;
+        if (empty($_FILES[$field])) return $uploaded;
+
         $files = $_FILES[$field];
-        foreach ($files['name'] as $i => $name) {
-            if ($files['error'][$i] !== UPLOAD_ERR_OK) continue;
+        // Ensure uploads are handled as arrays even if only one file is selected
+        if (!is_array($files['name'])) {
+            $files = [
+                'name'     => [$files['name']],
+                'type'     => [$files['type']],
+                'tmp_name' => [$files['tmp_name']],
+                'error'    => [$files['error']],
+                'size'     => [$files['size']],
+            ];
+        }
+
+        if (empty($files['name'][0])) return $uploaded;
+
+        // Normalize indexes to integers (avoid string keys from $_FILES) so checks like $i === 0 work reliably.
+        $names    = array_values((array)$files['name']);
+        $types    = array_values((array)$files['type']);
+        $tmpNames = array_values((array)$files['tmp_name']);
+        $errors   = array_values((array)$files['error']);
+        $sizes    = array_values((array)$files['size']);
+
+        foreach ($names as $i => $name) {
+            if (empty($name) || ($errors[$i] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) continue;
             $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
             if (!in_array($ext, APP_CONFIG['allowed_ext'], true)) continue;
-            if ($files['size'][$i] > APP_CONFIG['max_file_size'])  continue;
+            if (($sizes[$i] ?? 0) > APP_CONFIG['max_file_size']) continue;
             $filename = uniqid('room_', true) . '.' . $ext;
-            if (move_uploaded_file($files['tmp_name'][$i], UPLOAD_PATH . $filename)) {
-                $uploaded[] = $filename;
+            if (!empty($tmpNames[$i]) && move_uploaded_file($tmpNames[$i], UPLOAD_PATH . $filename)) {
+                $uploaded[] = basename($filename);
             }
         }
         return $uploaded;
@@ -130,6 +163,14 @@ abstract class BaseController
         if ($file['size'] > APP_CONFIG['max_file_size']) return null;
         $filename = uniqid('avatar_', true) . '.' . $ext;
         move_uploaded_file($file['tmp_name'], UPLOAD_PATH . $filename);
-        return $filename;
+        return basename($filename);
+    }
+
+    protected function logActivity(?int $userId, string $action, ?string $targetType = null, ?int $targetId = null, array $metadata = []): void
+    {
+        Database::insert(
+            'INSERT INTO activity_logs (user_id, action, target_type, target_id, metadata) VALUES (?, ?, ?, ?, ?)',
+            [$userId, $action, $targetType, $targetId, json_encode($metadata, JSON_UNESCAPED_UNICODE)]
+        );
     }
 }

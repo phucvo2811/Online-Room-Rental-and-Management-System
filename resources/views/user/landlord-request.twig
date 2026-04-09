@@ -1,0 +1,231 @@
+{% extends 'layouts/base.twig' %}
+{% block title %}Đăng ký làm chủ trọ — {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 740px">
+
+    {# ── Page header ── #}
+    <div class="mb-4">
+        <a href="{{ route('/dashboard') }}" class="text-muted small text-decoration-none">
+            <i class="bi bi-arrow-left me-1"></i>Quay lại Dashboard
+        </a>
+        <h3 class="fw-900 mt-2 mb-1">Đăng ký làm Chủ trọ</h3>
+        <p class="text-muted">Nâng cấp tài khoản để bắt đầu đăng tin cho thuê phòng.</p>
+    </div>
+
+    {# ── Flash messages ── #}
+    {% if app.flash.success is defined %}
+        <div class="alert alert-success rounded-3 d-flex align-items-start gap-2">
+            <i class="bi bi-check-circle-fill flex-shrink-0 mt-1"></i>
+            <span>{{ app.flash.success }}</span>
+        </div>
+    {% endif %}
+    {% if app.flash.danger is defined %}
+        <div class="alert alert-danger rounded-3 d-flex align-items-start gap-2">
+            <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1"></i>
+            <span>{{ app.flash.danger }}</span>
+        </div>
+    {% endif %}
+    {% if app.flash.warning is defined %}
+        <div class="alert alert-warning rounded-3 d-flex align-items-start gap-2">
+            <i class="bi bi-exclamation-circle-fill flex-shrink-0 mt-1"></i>
+            <span>{{ app.flash.warning }}</span>
+        </div>
+    {% endif %}
+
+    {# ── STATUS: pending ── #}
+    {% if landlordStatus == 'pending' %}
+        <div class="card border-0 shadow-sm rounded-4 text-center py-5 px-4">
+            <div class="mb-3">
+                <span style="font-size:3rem">⏳</span>
+            </div>
+            <h5 class="fw-800">Yêu cầu đang chờ duyệt</h5>
+            <p class="text-muted mb-1">Chúng tôi đã nhận được yêu cầu của bạn và đang xem xét.</p>
+            <p class="text-muted small">Bạn sẽ nhận được thông báo ngay khi có kết quả.</p>
+            {% if latestRequest %}
+                <div class="mt-4 p-3 rounded-3" style="background:#f8f9fa;text-align:left;max-width:400px;margin:0 auto">
+                    <div class="small text-muted mb-1">Thông tin đã gửi:</div>
+                    <div class="fw-600">{{ latestRequest.name }}</div>
+                    <div class="text-muted small">{{ latestRequest.phone }}</div>
+                    {% if latestRequest.description %}
+                        <div class="text-muted small mt-1">{{ latestRequest.description }}</div>
+                    {% endif %}
+                    <div class="text-muted small mt-2">
+                        Gửi lúc: {{ latestRequest.created_at|date('H:i d/m/Y') }}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+    {# ── STATUS: approved (should have been redirected, but guard) ── #}
+    {% elseif landlordStatus == 'approved' %}
+        <div class="card border-0 shadow-sm rounded-4 text-center py-5 px-4">
+            <div class="mb-3"><span style="font-size:3rem">✅</span></div>
+            <h5 class="fw-800">Tài khoản đã là Chủ trọ</h5>
+            <p class="text-muted">Bạn có thể bắt đầu đăng tin phòng trọ ngay bây giờ.</p>
+            <a href="{{ route('/dashboard') }}" class="btn btn-primary px-4 mt-2 rounded-pill fw-700">
+                Đến Dashboard
+            </a>
+        </div>
+
+    {# ── STATUS: none or rejected — show form ── #}
+    {% else %}
+        {% if landlordStatus == 'rejected' and latestRequest %}
+            <div class="alert alert-warning rounded-3 d-flex align-items-start gap-2">
+                <i class="bi bi-x-circle-fill flex-shrink-0 mt-1"></i>
+                <div>
+                    <strong>Yêu cầu trước đó đã bị từ chối.</strong>
+                    {% if latestRequest.admin_note %}
+                        <div class="small mt-1">Lý do: {{ latestRequest.admin_note }}</div>
+                    {% endif %}
+                    <div class="small mt-1 text-muted">Bạn có thể chỉnh sửa thông tin và gửi lại yêu cầu mới.</div>
+                </div>
+            </div>
+        {% endif %}
+
+        {# Info cards #}
+        <div class="row g-3 mb-4">
+            <div class="col-sm-4">
+                <div class="card border-0 rounded-4 h-100 text-center p-3" style="background:#fef3ec">
+                    <div style="font-size:1.8rem">🏠</div>
+                    <div class="fw-700 small mt-2">Đăng tin phòng</div>
+                    <div class="text-muted" style="font-size:.78rem">Tạo và quản lý tin đăng cho thuê</div>
+                </div>
+            </div>
+            <div class="col-sm-4">
+                <div class="card border-0 rounded-4 h-100 text-center p-3" style="background:#ecfdf5">
+                    <div style="font-size:1.8rem">📊</div>
+                    <div class="fw-700 small mt-2">Thống kê thu nhập</div>
+                    <div class="text-muted" style="font-size:.78rem">Theo dõi doanh thu hàng tháng</div>
+                </div>
+            </div>
+            <div class="col-sm-4">
+                <div class="card border-0 rounded-4 h-100 text-center p-3" style="background:#eff6ff">
+                    <div style="font-size:1.8rem">⭐</div>
+                    <div class="fw-700 small mt-2">Gói PRO</div>
+                    <div class="text-muted" style="font-size:.78rem">Tăng lượt hiển thị & ưu tiên tìm kiếm</div>
+                </div>
+            </div>
+        </div>
+
+        {# Registration form #}
+        <div class="card border-0 shadow-sm rounded-4 p-4">
+            <h5 class="fw-800 mb-3">
+                <i class="bi bi-person-badge me-2 text-primary"></i>Thông tin đăng ký
+            </h5>
+
+            <form method="POST" action="{{ route('/landlord-request') }}" id="landlordForm" novalidate>
+                <input type="hidden" name="csrf_token" value="{{ csrf }}">
+
+                {# Name #}
+                <div class="mb-3">
+                    <label class="form-label fw-600">
+                        Họ và tên <span class="text-danger">*</span>
+                    </label>
+                    <input type="text"
+                           name="name"
+                           id="fieldName"
+                           class="form-control form-control-lg rounded-3"
+                           placeholder="Nguyễn Văn A"
+                           value="{{ latestRequest.name|default(auth.name) }}"
+                           required
+                           minlength="2"
+                           maxlength="100">
+                    <div class="invalid-feedback">Vui lòng nhập họ tên (ít nhất 2 ký tự).</div>
+                </div>
+
+                {# Phone #}
+                <div class="mb-3">
+                    <label class="form-label fw-600">
+                        Số điện thoại <span class="text-danger">*</span>
+                    </label>
+                    <input type="tel"
+                           name="phone"
+                           id="fieldPhone"
+                           class="form-control form-control-lg rounded-3"
+                           placeholder="0901234567"
+                           value="{{ latestRequest.phone|default('') }}"
+                           required
+                           pattern="[0-9]{9,11}">
+                    <div class="invalid-feedback">Số điện thoại phải có 9–11 chữ số.</div>
+                </div>
+
+                {# Description #}
+                <div class="mb-4">
+                    <label class="form-label fw-600">
+                        Mô tả thêm <span class="text-muted small fw-400">(tuỳ chọn)</span>
+                    </label>
+                    <textarea name="description"
+                              class="form-control rounded-3"
+                              rows="3"
+                              placeholder="Ví dụ: Tôi hiện có 3 phòng trọ tại quận Ninh Kiều..."
+                              maxlength="500">{{ latestRequest.description|default('') }}</textarea>
+                </div>
+
+                {# Terms checkbox ── REQUIRED ── #}
+                <div class="mb-4 p-3 rounded-3" style="background:#fef3ec;border:1.5px solid #fed7aa">
+                    <div class="form-check">
+                        <input class="form-check-input"
+                               type="checkbox"
+                               name="agree_terms"
+                               id="agreeTerms"
+                               value="1"
+                               required>
+                        <label class="form-check-label fw-600" for="agreeTerms">
+                            Tôi đã đọc và đồng ý với
+                            <a href="{{ route('/terms') }}" target="_blank" class="text-primary">
+                                Điều khoản sử dụng
+                            </a>
+                            của {{ app_name }}
+                            <span class="text-danger">*</span>
+                        </label>
+                        <div class="invalid-feedback">Bạn phải đồng ý với Điều khoản để tiếp tục.</div>
+                    </div>
+                </div>
+
+                {# Submit #}
+                <div class="d-grid">
+                    <button type="submit"
+                            id="submitBtn"
+                            class="btn btn-primary btn-lg rounded-pill fw-700"
+                            disabled>
+                        <i class="bi bi-send me-2"></i>Gửi yêu cầu đăng ký
+                    </button>
+                </div>
+
+                <p class="text-muted small text-center mt-3 mb-0">
+                    Yêu cầu sẽ được admin xem xét trong vòng <strong>1–2 ngày làm việc</strong>.
+                </p>
+            </form>
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    var checkbox  = document.getElementById('agreeTerms');
+    var submitBtn = document.getElementById('submitBtn');
+    var form      = document.getElementById('landlordForm');
+
+    if (!checkbox || !submitBtn || !form) return;
+
+    function syncBtn() {
+        submitBtn.disabled = !checkbox.checked;
+    }
+    checkbox.addEventListener('change', syncBtn);
+    syncBtn();
+
+    // Client-side validation before submit
+    form.addEventListener('submit', function (e) {
+        if (!form.checkValidity()) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        form.classList.add('was-validated');
+    });
+})();
+</script>
+{% endblock %}

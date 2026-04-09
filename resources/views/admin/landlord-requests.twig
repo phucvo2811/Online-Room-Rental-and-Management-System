@@ -1,0 +1,230 @@
+{% extends 'layouts/admin.twig' %}
+{% set active_page = 'landlord_requests' %}
+{% block title %}Yêu cầu làm chủ trọ{% endblock %}
+
+{% block admin_content %}
+
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+    <h4 class="fw-800 mb-0">
+        Yêu cầu làm chủ trọ
+        {% if pendingCount > 0 %}
+            <span class="badge bg-warning text-dark ms-2" style="font-size:.7rem">{{ pendingCount }} chờ duyệt</span>
+        {% endif %}
+    </h4>
+
+    {# Status tabs #}
+    <div class="d-flex gap-2">
+        <a href="{{ route('/admin/landlord-requests') }}?status=pending"
+           class="btn btn-sm {{ currentStatus == 'pending' ? 'btn-primary' : 'btn-outline-secondary' }} rounded-pill">
+            <i class="bi bi-clock me-1"></i>Chờ duyệt
+            {% if pendingCount > 0 %}
+                <span class="badge bg-warning text-dark ms-1">{{ pendingCount }}</span>
+            {% endif %}
+        </a>
+        <a href="{{ route('/admin/landlord-requests') }}?status=approved"
+           class="btn btn-sm {{ currentStatus == 'approved' ? 'btn-success' : 'btn-outline-secondary' }} rounded-pill">
+            <i class="bi bi-check-circle me-1"></i>Đã duyệt
+        </a>
+        <a href="{{ route('/admin/landlord-requests') }}?status=rejected"
+           class="btn btn-sm {{ currentStatus == 'rejected' ? 'btn-danger' : 'btn-outline-secondary' }} rounded-pill">
+            <i class="bi bi-x-circle me-1"></i>Đã từ chối
+        </a>
+    </div>
+</div>
+
+{% if requests is empty %}
+    <div class="text-center py-5 text-muted">
+        <div style="font-size:3rem">📭</div>
+        <p class="mt-2 fw-500">
+            {% if currentStatus == 'pending' %}Không có yêu cầu nào đang chờ duyệt.
+            {% elseif currentStatus == 'approved' %}Chưa có yêu cầu nào được duyệt.
+            {% else %}Chưa có yêu cầu nào bị từ chối.
+            {% endif %}
+        </p>
+    </div>
+{% else %}
+    <div class="admin-table">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th style="width:36px">#</th>
+                        <th>Người dùng</th>
+                        <th>Tên đăng ký</th>
+                        <th>SĐT</th>
+                        <th>Mô tả</th>
+                        <th>Ngày gửi</th>
+                        {% if currentStatus != 'pending' %}
+                            <th>Ngày xử lý</th>
+                            <th>Người duyệt</th>
+                            {% if currentStatus == 'rejected' %}<th>Lý do</th>{% endif %}
+                        {% else %}
+                            <th>Hành động</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in requests %}
+                        <tr>
+                            <td class="text-muted small">{{ loop.index }}</td>
+
+                            {# User info #}
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="user-avatar-sm" style="width:34px;height:34px;font-size:14px;flex-shrink:0">
+                                        {% if req.user_avatar %}
+                                            <img src="{{ upload_url ~ req.user_avatar }}"
+                                                 style="width:34px;height:34px;border-radius:50%;object-fit:cover" alt="">
+                                        {% else %}
+                                            {{ req.user_name|slice(0,1)|upper }}
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <div class="fw-600 small">{{ req.user_name }}</div>
+                                        <div class="text-muted" style="font-size:11px">{{ req.user_email }}</div>
+                                        <div class="text-muted" style="font-size:10px">
+                                            Tham gia: {{ req.user_created_at|date('d/m/Y') }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            {# Registered name #}
+                            <td class="fw-600 small">{{ req.name }}</td>
+
+                            {# Phone #}
+                            <td class="small">
+                                <a href="tel:{{ req.phone }}" class="text-decoration-none">{{ req.phone }}</a>
+                            </td>
+
+                            {# Description #}
+                            <td class="small text-muted" style="max-width:200px">
+                                {% if req.description %}
+                                    <span data-bs-toggle="tooltip" title="{{ req.description }}">
+                                        {{ req.description|slice(0,60) }}{{ req.description|length > 60 ? '…' : '' }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted fst-italic">—</span>
+                                {% endif %}
+                            </td>
+
+                            {# Created at #}
+                            <td class="small text-muted">{{ req.created_at|date('H:i d/m/Y') }}</td>
+
+                            {% if currentStatus == 'pending' %}
+                                {# Action buttons #}
+                                <td>
+                                    <div class="d-flex gap-2 flex-wrap">
+                                        {# Approve #}
+                                        <form method="POST"
+                                              action="{{ route('/admin/landlord-requests/' ~ req.id ~ '/approve') }}"
+                                              onsubmit="return confirm('Duyệt yêu cầu của {{ req.user_name }}?')">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf }}">
+                                            <button type="submit" class="btn btn-sm btn-success py-1 px-2">
+                                                <i class="bi bi-check-lg me-1"></i>Duyệt
+                                            </button>
+                                        </form>
+
+                                        {# Reject with reason #}
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-danger py-1 px-2"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#rejectModal"
+                                                data-req-id="{{ req.id }}"
+                                                data-req-name="{{ req.user_name }}">
+                                            <i class="bi bi-x-lg me-1"></i>Từ chối
+                                        </button>
+                                    </div>
+                                </td>
+                            {% else %}
+                                {# Reviewed at #}
+                                <td class="small text-muted">
+                                    {{ req.reviewed_at ? req.reviewed_at|date('H:i d/m/Y') : '—' }}
+                                </td>
+                                {# Reviewer #}
+                                <td class="small">{{ req.reviewer_name ?? '—' }}</td>
+
+                                {% if currentStatus == 'rejected' %}
+                                    <td class="small text-danger">{{ req.admin_note ?? '—' }}</td>
+                                {% endif %}
+                            {% endif %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endif %}
+
+{# ── Reject Modal ── #}
+{% if currentStatus == 'pending' %}
+<div class="modal fade" id="rejectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-800">
+                    <i class="bi bi-x-circle-fill text-danger me-2"></i>Từ chối yêu cầu
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="" id="rejectForm">
+                <div class="modal-body">
+                    <input type="hidden" name="csrf_token" value="{{ csrf }}">
+                    <p class="text-muted small mb-3">
+                        Yêu cầu của <strong id="rejectUserName"></strong> sẽ bị từ chối.
+                        Người dùng sẽ nhận được thông báo và có thể gửi lại yêu cầu mới.
+                    </p>
+                    <label class="form-label fw-600">Lý do từ chối</label>
+                    <textarea name="reason"
+                              class="form-control rounded-3"
+                              rows="3"
+                              placeholder="Nhập lý do từ chối..."
+                              required minlength="5" maxlength="500"></textarea>
+                    <div class="invalid-feedback">Vui lòng nhập lý do.</div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Huỷ</button>
+                    <button type="submit" class="btn btn-danger rounded-pill fw-700">
+                        <i class="bi bi-x-lg me-1"></i>Xác nhận từ chối
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Reject modal — populate action URL and user name
+(function () {
+    var modal = document.getElementById('rejectModal');
+    if (!modal) return;
+    modal.addEventListener('show.bs.modal', function (e) {
+        var btn    = e.relatedTarget;
+        var id     = btn.getAttribute('data-req-id');
+        var name   = btn.getAttribute('data-req-name');
+        document.getElementById('rejectUserName').textContent = name;
+        document.getElementById('rejectForm').action = '{{ app_url }}/admin/landlord-requests/' + id + '/reject';
+    });
+
+    // Validate textarea before submit
+    var form = document.getElementById('rejectForm');
+    if (form) {
+        form.addEventListener('submit', function (e) {
+            if (!form.checkValidity()) {
+                e.preventDefault();
+                e.stopPropagation();
+                form.classList.add('was-validated');
+            }
+        });
+    }
+
+    // Bootstrap tooltips
+    var tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    tooltips.forEach(function (el) { new bootstrap.Tooltip(el); });
+})();
+</script>
+{% endblock %}

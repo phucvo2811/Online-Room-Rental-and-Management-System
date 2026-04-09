@@ -1,0 +1,145 @@
+{% extends 'layouts/base.twig' %}
+{% block title %}{{ pageTitle }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="mb-3">
+        <a href="{{ route('/blocks/' ~ block.id ~ '/rooms') }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Quay lại</a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <h4 class="card-title mb-4">{{ pageTitle }}</h4>
+            
+            {% if block.type in ['boarding_house', 'dormitory'] and existingRooms is defined %}
+            <div class="alert alert-info mb-4">
+                <strong>Phòng hiện có:</strong>
+                {% if existingRooms|length > 0 %}
+                    <div class="mt-2">
+                    {% for room in existingRooms %}
+                        <span class="badge bg-primary">Phòng {{ room.room_number }}</span>
+                    {% endfor %}
+                    </div>
+                    <div class="mt-2 small">
+                        <strong>Gợi ý số phòng tiếp theo:</strong> <span class="badge bg-success">{{ nextRoomNumber|default('1') }}</span>
+                    </div>
+                {% else %}
+                    <div class="mt-2"><em>Chưa có phòng nào</em></div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <form method="POST" action="" class="row g-3">
+                <input type="hidden" name="csrf_token" value="{{ csrf }}">
+                
+                {% if block.type not in ['boarding_house', 'dormitory'] %}
+                <div class="col-md-12">
+                    <label class="form-label">Tên / Tiêu đề phòng <span class="text-danger">*</span></label>
+                    <input type="text" name="name" class="form-control" value="{{ room.name|default('') }}" required>
+                    {% if errors.name %}<div class="text-danger small">{{ errors.name }}</div>{% endif %}
+                </div>
+                {% endif %}
+
+                <div class="col-md-4">
+                    <label class="form-label">{% if block.type in ['boarding_house', 'dormitory'] %}Số phòng <span class="text-danger">*</span>{% else %}Số phòng{% endif %}</label>
+                    <input type="number" name="room_number" class="form-control" min="1" value="{{ room.room_number|default(nextRoomNumber|default('')) }}" {% if block.type in ['boarding_house', 'dormitory'] %}required{% endif %}>
+                    {% if errors.room_number %}<div class="text-danger small">{{ errors.room_number }}</div>{% endif %}
+                </div>
+
+                <div class="col-md-8">
+                    <label class="form-label">Loại phòng</label>
+                    <select name="room_type_id" class="form-select">
+                        <option value="">-- Chọn --</option>
+                        {% for type in types %}
+                            <option value="{{ type.id }}" {{ room.room_type_id == type.id ? 'selected' : '' }}>{{ type.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Giá thuê <span class="text-danger">*</span></label>
+                    <input type="number" name="price" class="form-control" value="{{ room.price|default(block.price_min|default('')) }}" required>
+                    {% if errors.price %}<div class="text-danger small">{{ errors.price }}</div>{% endif %}
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Diện tích (m²) <span class="text-danger">*</span></label>
+                    <input type="number" name="area" class="form-control" value="{{ room.area|default(block.area|default('')) }}" required>
+                    {% if errors.area %}<div class="text-danger small">{{ errors.area }}</div>{% endif %}
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Trạng thái</label>
+                    <select name="occupancy_status" class="form-select">
+                        <option value="available" {{ room.occupancy_status == 'available' ? 'selected' : '' }}>Còn trống</option>
+                        <option value="rented" {{ room.occupancy_status == 'rented' ? 'selected' : '' }}>Đã thuê</option>
+                        <option value="maintenance" {{ room.occupancy_status == 'maintenance' ? 'selected' : '' }}>Đang sửa</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Mô tả (tùy chọn)</label>
+                    <textarea name="description" class="form-control" rows="2" placeholder="Thông tin thêm về phòng...">{{ room.description|default(block.description|default('')) }}</textarea>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Địa chỉ</label>
+                    <input type="text" name="address" class="form-control" value="{{ room.address|default(block.address|default('')) }}">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Số điện thoại liên hệ</label>
+                    <input type="text" name="contact_phone" class="form-control" value="{{ room.contact_phone|default(block.contact_phone|default('')) }}">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Giá điện (VNĐ/kWh)</label>
+                    <input type="number" name="electric_price" class="form-control" value="{{ room.electric_price|default(block.electric_price|default('')) }}">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Giá nước (VNĐ/khối)</label>
+                    <input type="number" name="water_price" class="form-control" value="{{ room.water_price|default(block.water_price|default('')) }}">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Phí internet (VNĐ/tháng)</label>
+                    <input type="number" name="internet_price" class="form-control" value="{{ room.internet_price|default(block.internet_price|default('')) }}">
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label d-block mb-2">Tiện ích</label>
+                    <div class="d-flex flex-wrap gap-3">
+                        {% set amenities = [
+                            {name:'has_wifi',   label:'WiFi'},
+                            {name:'has_ac',     label:'Điều hòa'},
+                            {name:'has_parking',label:'Chỗ để xe'},
+                            {name:'has_kitchen',label:'Bếp'},
+                            {name:'has_fridge', label:'Tủ lạnh'},
+                            {name:'has_washing_machine',label:'Máy giặt'},
+                            {name:'has_private_bath',   label:'WC riêng'},
+                            {name:'allow_pet',  label:'Nuôi thú cưng'},
+                            {name:'allow_cooking',label:'Nấu ăn'}
+                        ] %}
+                        {% for am in amenities %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="{{ am.name }}" value="1" id="am_{{ am.name }}"
+                                {% if room[am.name] is defined and room[am.name] %}
+                                    checked
+                                {% elseif room[am.name] is not defined and block[am.name] is defined and block[am.name] %}
+                                    checked
+                                {% endif %}>
+                            <label class="form-check-label" for="am_{{ am.name }}">{{ am.label }}</label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <button class="btn btn-primary" type="submit">Lưu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

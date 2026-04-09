@@ -1,186 +1,438 @@
 {% extends 'layouts/base.twig' %}
 {% block title %}Tìm phòng trọ uy tín tại Cần Thơ{% endblock %}
+{% block meta_desc %}Tìm phòng trọ, căn hộ mini, nhà trọ uy tín tại Cần Thơ. Hàng trăm phòng đã xác thực, kết nối trực tiếp chủ trọ.{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+{% endblock %}
 
 {% block content %}
 
-{# ── HERO ── #}
-<section class="hero-section">
-    <div class="hero-floating-card card-1">
-        <div class="d-flex align-items-center gap-2">
-            <div class="stat-icon-box green" style="width:36px;height:36px;font-size:16px;border-radius:8px;">
-                <i class="bi bi-check-lg"></i>
-            </div>
+{# ══════════════════════════════════════════════════════════
+   SECTION 1 — HERO
+══════════════════════════════════════════════════════════ #}
+<section class="ho-hero">
+
+    {# Floating glass cards — visible on large screens only #}
+    <div class="ho-float ho-float-1">
+        <div class="ho-float-card">
+            <div class="ho-float-icon green"><i class="bi bi-shield-check-fill"></i></div>
             <div>
-                <div class="text-white fw-700 small">{{ stats.approved }}+ Phòng</div>
-                <div class="text-white-50" style="font-size:11px">Đã xác thực</div>
+                <div class="ho-float-val">{{ stats.approved }}+</div>
+                <div class="ho-float-lbl">Phòng xác thực</div>
             </div>
         </div>
     </div>
 
-    <div class="hero-floating-card card-2">
-        <div class="d-flex align-items-center gap-2">
-            <i class="bi bi-star-fill text-warning"></i>
+    <div class="ho-float ho-float-2">
+        <div class="ho-float-card">
+            <div class="ho-float-icon orange"><i class="bi bi-fire"></i></div>
             <div>
-                <div class="text-white fw-700 small">4.8 / 5</div>
-                <div class="text-white-50" style="font-size:11px">Đánh giá trung bình</div>
+                <div class="ho-float-val">{{ today_new is defined ? today_new : 0 }} tin mới</div>
+                <div class="ho-float-lbl">Cập nhật hôm nay</div>
             </div>
         </div>
     </div>
 
-    <div class="container position-relative" style="z-index:2">
+    <div class="ho-float ho-float-3">
+        <div class="ho-float-card">
+            <div class="ho-float-icon blue"><i class="bi bi-people-fill"></i></div>
+            <div>
+                <div class="ho-float-val">{{ stats.users }}+</div>
+                <div class="ho-float-lbl">Người dùng</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container ho-hero-content">
         <div class="row justify-content-center">
-            <div class="col-lg-9 text-center">
-                <span class="tag-pill mb-3 d-inline-block">🏡 Nền tảng tìm phòng trọ #1 Cần Thơ</span>
-                <h1 class="hero-title mb-3">
-                    Tìm phòng trọ <span>ưng ý</span><br>
-                    tại <span>Cần Thơ</span> — Nhanh & Uy tín
+            <div class="col-lg-10 col-xl-9">
+
+                {# Live badge #}
+                <div class="ho-live-badge">
+                    <span class="ho-live-dot"></span>
+                    <span>Nền tảng tìm phòng #1 Cần Thơ</span>
+                    {% if today_new is defined and today_new > 0 %}
+                        <span class="ho-today-new">✨ {{ today_new }} tin mới hôm nay</span>
+                    {% endif %}
+                </div>
+
+                <h1 class="ho-hero-title">
+                    Tìm phòng trọ <em>ưng ý</em><br>
+                    tại <span>Cần Thơ</span>
                 </h1>
-                <p class="hero-subtitle mb-4">
-                    Kết nối chủ trọ và người thuê. Hàng trăm phòng đã được xác thực.<br>
-                    Tìm kiếm theo đường, phường, quận — chỉ trong vài giây.
+                <p class="ho-hero-sub">
+                    Kết nối chủ trọ &amp; người thuê · Hàng trăm phòng đã xác thực<br>
+                    Tìm theo tên đường, phường, quận — siêu nhanh
                 </p>
 
-                <div class="hero-search-box">
-                    <form action="{{ route('/rooms') }}" method="GET">
-                        <div class="row g-2 align-items-center">
-                            <div class="col-12 col-md-5">
-                                <div class="input-group">
-                                    <span class="input-group-text border-0 bg-transparent pe-0">
-                                        <i class="bi bi-search text-muted"></i>
-                                    </span>
-                                    <input type="text" name="keyword"
-                                        class="form-control border-0 shadow-none ps-1"
-                                        placeholder="Tên đường, khu vực..." autocomplete="off">
+                {# ── Smart Search Box ── #}
+                <div class="ho-search-shell">
+                    <form action="{{ route('/properties') }}" method="GET" id="heroForm">
+                        <div class="ho-search-box" id="heroSearchBox">
+
+                            {# Keyword field + autocomplete #}
+                            <div class="ho-search-field" style="flex:2.2;position:relative">
+                                <i class="bi bi-search ho-sf-icon"></i>
+                                <div style="flex:1">
+                                    <span class="ho-sf-label">Tìm kiếm</span>
+                                    <input type="text" name="keyword" id="heroKeyword"
+                                           placeholder="Tên đường, khu vực, nhà trọ..."
+                                           autocomplete="off"
+                                           value="">
+                                </div>
+                                <div class="ho-autocomplete" id="heroAC"></div>
+                            </div>
+
+                            <div class="ho-search-divider"></div>
+
+                            {# Ward #}
+                            <div class="ho-search-field" style="flex:1.4">
+                                <i class="bi bi-geo-alt ho-sf-icon"></i>
+                                <div style="flex:1">
+                                    <span class="ho-sf-label">Phường / Xã</span>
+                                    <select name="ward_id">
+                                        <option value="">Tất cả</option>
+                                        {% for w in ward_stats %}
+                                            <option value="{{ w.id }}">
+                                                {{ w.name }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
                                 </div>
                             </div>
-                            <div class="col-6 col-md-3">
-                                <select name="district_id" class="form-select border-0 shadow-none">
-                                    <option value="">Quận / Huyện</option>
-                                    {% for district in districts %}
-                                        <option value="{{ district.id }}">{{ district.name }}</option>
-                                    {% endfor %}
-                                </select>
+
+                            <div class="ho-search-divider"></div>
+
+                            {# Price range #}
+                            <div class="ho-search-field" style="flex:1.3">
+                                <i class="bi bi-tag ho-sf-icon"></i>
+                                <div style="flex:1">
+                                    <span class="ho-sf-label">Mức giá</span>
+                                    <select name="price_max">
+                                        <option value="">Tất cả</option>
+                                        <option value="1500000">Dưới 1.5 triệu</option>
+                                        <option value="2000000">Dưới 2 triệu</option>
+                                        <option value="3000000">Dưới 3 triệu</option>
+                                        <option value="5000000">Dưới 5 triệu</option>
+                                        <option value="10000000">Dưới 10 triệu</option>
+                                    </select>
+                                </div>
                             </div>
-                            <div class="col-6 col-md-2">
-                                <select name="room_type" class="form-select border-0 shadow-none">
-                                    <option value="">Loại phòng</option>
-                                    {% for key, label in room_types %}
-                                        <option value="{{ key }}">{{ label }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="col-12 col-md-2">
-                                <button type="submit" class="btn-search-main w-100">
-                                    <i class="bi bi-search me-1"></i>Tìm ngay
-                                </button>
-                            </div>
-                        </div>
-                        <div class="d-flex gap-3 mt-3 flex-wrap justify-content-center">
-                            <a href="{{ route('/rooms') }}?has_wifi=1" class="text-muted small quick-link">
-                                <i class="bi bi-wifi me-1"></i>Có WiFi
-                            </a>
-                            <a href="{{ route('/rooms') }}?has_ac=1" class="text-muted small quick-link">
-                                <i class="bi bi-snow2 me-1"></i>Máy lạnh
-                            </a>
-                            <a href="{{ route('/rooms') }}?allow_pet=1" class="text-muted small quick-link">
-                                🐾 Nuôi thú cưng
-                            </a>
-                            <a href="{{ route('/rooms') }}?price_max=2000000" class="text-muted small quick-link">
-                                <i class="bi bi-tag me-1"></i>Dưới 2 triệu
-                            </a>
+
+                            <button type="submit" class="ho-search-btn">
+                                <i class="bi bi-search"></i>Tìm ngay
+                            </button>
                         </div>
                     </form>
+
+                    {# Hot search chips #}
+                    <div class="ho-hot-row">
+                        <span class="ho-hot-label"><i class="bi bi-fire me-1 text-warning"></i>Tìm nhiều:</span>
+                        <a href="{{ route('/properties') }}?price_max=2000000" class="ho-hot-chip">💸 Dưới 2 triệu</a>
+                        <a href="{{ route('/properties') }}?keyword=đại học cần thơ" class="ho-hot-chip">🎓 Gần ĐH Cần Thơ</a>
+                        <a href="{{ route('/properties') }}?keyword=gác lửng" class="ho-hot-chip">🏠 Có gác lửng</a>
+                        <a href="{{ route('/properties') }}?allow_pet=1" class="ho-hot-chip">🐾 Nuôi thú cưng</a>
+                        <a href="{{ route('/properties') }}?has_wifi=1" class="ho-hot-chip">📶 WiFi miễn phí</a>
+                    </div>
                 </div>
+
             </div>
         </div>
+    </div>
+
+    {# Wave bottom divider #}
+    <div class="ho-hero-wave">
+        <svg viewBox="0 0 1440 88" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+            <path d="M0,56 C360,100 1080,10 1440,56 L1440,88 L0,88 Z" fill="#ffffff"/>
+        </svg>
     </div>
 </section>
 
-{# ── STATS BAR ── #}
-<div class="stats-row">
+{# ══════════════════════════════════════════════════════════
+   SECTION 2 — STATS COUNTER
+══════════════════════════════════════════════════════════ #}
+<div class="ho-stats-row ho-reveal">
     <div class="container">
         <div class="row g-0">
             <div class="col-6 col-md-3">
-                <div class="stat-item">
-                    <div class="stat-number">{{ stats.approved }}+</div>
-                    <div class="stat-label"><i class="bi bi-house me-1"></i>Phòng đã duyệt</div>
+                <div class="ho-stat-cell">
+                    <div class="ho-stat-icon-box orange"><i class="bi bi-house-fill"></i></div>
+                    <div class="ho-stat-num" data-target="{{ stats.approved }}">0</div>
+                    <div class="ho-stat-lbl">Phòng đã xác thực</div>
                 </div>
             </div>
             <div class="col-6 col-md-3">
-                <div class="stat-item">
-                    <div class="stat-number">{{ stats.users }}+</div>
-                    <div class="stat-label"><i class="bi bi-people me-1"></i>Người dùng</div>
+                <div class="ho-stat-cell">
+                    <div class="ho-stat-icon-box blue"><i class="bi bi-people-fill"></i></div>
+                    <div class="ho-stat-num" data-target="{{ stats.users }}">0</div>
+                    <div class="ho-stat-lbl">Người dùng tin tưởng</div>
                 </div>
             </div>
             <div class="col-6 col-md-3">
-                <div class="stat-item">
-                    <div class="stat-number">5</div>
-                    <div class="stat-label"><i class="bi bi-map me-1"></i>Quận / Huyện</div>
+                <div class="ho-stat-cell">
+                    <div class="ho-stat-icon-box green"><i class="bi bi-geo-alt-fill"></i></div>
+                    <div class="ho-stat-num" data-target="{{ ward_stats|length }}">0</div>
+                    <div class="ho-stat-lbl">Phường / Xã bao phủ</div>
                 </div>
             </div>
             <div class="col-6 col-md-3">
-                <div class="stat-item">
-                    <div class="stat-number">100%</div>
-                    <div class="stat-label"><i class="bi bi-shield-check me-1"></i>Đã xác thực</div>
+                <div class="ho-stat-cell">
+                    <div class="ho-stat-icon-box amber"><i class="bi bi-star-fill"></i></div>
+                    <div class="ho-stat-num" data-target-float="4.8">0</div>
+                    <div class="ho-stat-lbl">Đánh giá trung bình</div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-{# ── QUICK AREAS ── #}
-<section class="py-5 bg-white">
-    <div class="container">
-        <div class="text-center mb-4">
-            <span class="section-label">📍 Tìm theo khu vực</span>
-            <h2 class="section-title">Các quận phổ biến tại Cần Thơ</h2>
-        </div>
-        <div class="row g-3 justify-content-center">
-            {% set area_icons = ['🏙️','🌿','🌊','🏘️','🌾'] %}
-            {% for i, district in districts %}
-                <div class="col-6 col-sm-4 col-lg" style="max-width:200px">
-                    <a href="{{ route('/rooms') }}?district_id={{ district.id }}" class="area-card">
-                        <div class="area-icon">{{ area_icons[i % 5] }}</div>
-                        <div class="area-name">Q. {{ district.name }}</div>
-                        <div class="area-count">Tìm phòng →</div>
-                    </a>
-                </div>
-            {% endfor %}
-        </div>
-    </div>
-</section>
-
-{# ── FEATURED ROOMS ── #}
-<section class="py-5 bg-light">
+{# ══════════════════════════════════════════════════════════
+   SECTION 3 — WARD CAROUSEL (Netflix-style)
+══════════════════════════════════════════════════════════ #}
+{% set area_list = ward_stats is defined and ward_stats is not empty ? ward_stats : [] %}
+{% if area_list is not empty %}
+<section class="py-5" style="background:#fff">
     <div class="container">
         <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mb-4">
             <div>
-                <span class="section-label">🏠 Nổi bật</span>
-                <h2 class="section-title mb-0">Phòng trọ nổi bật hôm nay</h2>
+                <div class="ho-sec-eyebrow"><i class="bi bi-geo-alt-fill"></i> Khu vực</div>
+                <h2 class="ho-sec-title mb-1">Khám phá theo Phường / Xã</h2>
+                <p class="ho-sec-sub mb-0">{{ area_list|length }} phường/xã · Sắp xếp theo mức độ quan tâm</p>
             </div>
-            <a href="{{ route('/rooms') }}" class="btn btn-outline-primary fw-600">
+            <a href="{{ route('/properties') }}" class="btn btn-outline-primary fw-700 rounded-pill">
                 Xem tất cả <i class="bi bi-arrow-right ms-1"></i>
             </a>
         </div>
 
-        <div class="category-pills mb-4">
-            <a href="{{ route('/rooms') }}" class="cat-pill active">Tất cả</a>
-            {% for key, label in room_types %}
-                <a href="{{ route('/rooms') }}?room_type={{ key }}" class="cat-pill">{{ label }}</a>
-            {% endfor %}
+        {# District → background image (uploads/districts/) #}
+        {% set _dist_imgs = {
+            'Ninh Kiều':  'ninh-kieu.jpg',
+            'Cái Răng':   'cai-rang.jpg',
+            'Thốt Nốt':   'thot-not.jpg',
+            'Ô Môn':      'o-mon.jpg',
+            'Bình Thủy':  'binh-thuy.jpg',
+            'Phong Điền': 'phong-dien.jpg'
+        } %}
+        {# District → gradient fallback (24 districts) #}
+        {% set _dist_grads = {
+            'Ninh Kiều':     'linear-gradient(145deg,#f97316,#dc2626)',
+            'Bình Thủy':     'linear-gradient(145deg,#3b82f6,#1d4ed8)',
+            'Cái Răng':      'linear-gradient(145deg,#14b8a6,#0f766e)',
+            'Ô Môn':         'linear-gradient(145deg,#8b5cf6,#6d28d9)',
+            'Thốt Nốt':      'linear-gradient(145deg,#f59e0b,#b45309)',
+            'Phong Điền':    'linear-gradient(145deg,#10b981,#047857)',
+            'Cờ Đỏ':         'linear-gradient(145deg,#ef4444,#be123c)',
+            'Thới Lai':      'linear-gradient(145deg,#6366f1,#4338ca)',
+            'Vĩnh Thạnh':    'linear-gradient(145deg,#0ea5e9,#0369a1)',
+            'Vị Thanh':      'linear-gradient(145deg,#22c55e,#15803d)',
+            'Ngã Bảy':       'linear-gradient(145deg,#f43f5e,#9f1239)',
+            'Long Mỹ':       'linear-gradient(145deg,#a855f7,#7e22ce)',
+            'Châu Thành':    'linear-gradient(145deg,#fb923c,#c2410c)',
+            'Phụng Hiệp':    'linear-gradient(145deg,#2dd4bf,#0f766e)',
+            'Sóc Trăng':     'linear-gradient(145deg,#e879f9,#86198f)',
+            'Ngã Năm':       'linear-gradient(145deg,#facc15,#a16207)',
+            'Vĩnh Châu':     'linear-gradient(145deg,#38bdf8,#0369a1)',
+            'Mỹ Xuyên':      'linear-gradient(145deg,#4ade80,#166534)',
+            'Long Phú':      'linear-gradient(145deg,#f87171,#b91c1c)',
+            'Kế Sách':       'linear-gradient(145deg,#818cf8,#3730a3)',
+            'Mỹ Tú':         'linear-gradient(145deg,#34d399,#065f46)',
+            'Trần Đề':       'linear-gradient(145deg,#fb7185,#9f1239)',
+            'Cù Lao Dung':   'linear-gradient(145deg,#60a5fa,#1e3a8a)'
+        } %}
+        {% set _fallback_grads = [
+            'linear-gradient(145deg,#f97316,#dc2626)',
+            'linear-gradient(145deg,#10b981,#047857)',
+            'linear-gradient(145deg,#3b82f6,#1d4ed8)',
+            'linear-gradient(145deg,#8b5cf6,#6d28d9)',
+            'linear-gradient(145deg,#14b8a6,#0f766e)',
+            'linear-gradient(145deg,#f59e0b,#b45309)'
+        ] %}
+
+        {# Netflix carousel wrapper #}
+        <div class="ho-ward-wrap" id="hoWardWrap">
+
+            {# Prev / Next arrows #}
+            <button class="ho-ward-arrow ho-ward-prev" id="hoWardPrev" aria-label="Trước">
+                <i class="bi bi-chevron-left"></i>
+            </button>
+            <button class="ho-ward-arrow ho-ward-next" id="hoWardNext" aria-label="Tiếp theo">
+                <i class="bi bi-chevron-right"></i>
+            </button>
+
+            {# Scrollable track #}
+            <div class="ho-ward-track" id="hoWardTrack">
+                {% for i, area in area_list %}
+                    {% set _img  = _dist_imgs[area.district_name]  ?? null %}
+                    {% set _grad = _dist_grads[area.district_name] ?? _fallback_grads[i % 6] %}
+                    <a href="{{ route('/properties') }}?ward_id={{ area.id }}&district_id={{ area.district_id }}"
+                       class="ho-area-card">
+                        {% if _img %}
+                            <div class="ho-area-bg"
+                                 style="background-image:url('{{ upload_url }}districts/{{ _img }}');background-size:cover;background-position:center;"></div>
+                        {% else %}
+                            <div class="ho-area-bg" style="background:{{ _grad }}"></div>
+                        {% endif %}
+                        <div class="ho-area-overlay"></div>
+                        <div class="ho-area-body">
+                            <div class="ho-area-name">{{ area.name }}</div>
+                            <div class="ho-area-district">{{ area.district_name }}</div>
+                            <div class="ho-area-count">
+                                <i class="bi bi-house-fill"></i>
+                                {{ area.listing_count ?? 0 }} BĐS
+                            </div>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endif %}
+
+{# ══════════════════════════════════════════════════════════
+   SECTION 4 — FEATURED PROPERTY LISTINGS
+══════════════════════════════════════════════════════════ #}
+<section class="py-5" style="background:var(--color-bg,#f8f8f6)">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mb-4">
+            <div>
+                <div class="ho-sec-eyebrow"><i class="bi bi-lightning-charge-fill"></i> Nổi bật</div>
+                <h2 class="ho-sec-title mb-1">BĐS cho thuê nổi bật hôm nay</h2>
+                <p class="ho-sec-sub mb-0">Các căn phòng chất lượng, giá tốt được cập nhật mới nhất</p>
+            </div>
+            <a href="{{ route('/properties') }}" class="btn btn-outline-primary fw-700 rounded-pill">
+                Xem tất cả <i class="bi bi-arrow-right ms-1"></i>
+            </a>
         </div>
 
+        {# Filter tabs #}
+        <div class="ho-feat-tabs">
+            <button class="ho-feat-tab active" data-type="">Tất cả</button>
+            <button class="ho-feat-tab" data-type="boarding_house">🏠 Nhà trọ</button>
+            <button class="ho-feat-tab" data-type="dormitory">🏫 KTX</button>
+            <button class="ho-feat-tab" data-type="homestay">🏡 Homestay</button>
+            <button class="ho-feat-tab" data-type="mini_house">🛋️ Căn hộ Mini</button>
+            <button class="ho-feat-tab" data-type="full_house">🏘️ Nhà nguyên căn</button>
+        </div>
+
+        {% set type_labels = {
+            'boarding_house': 'Nhà trọ',
+            'dormitory':      'KTX',
+            'homestay':       'Homestay',
+            'mini_house':     'Căn hộ Mini',
+            'full_house':     'Nhà nguyên căn'
+        } %}
+
         {% if featured is empty %}
-            <div class="empty-state">
-                <div class="icon"><i class="bi bi-house-slash"></i></div>
-                <h5>Chưa có phòng nào</h5>
-                <a href="{{ route('/register') }}" class="btn btn-primary">Đăng ký để đăng tin</a>
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-building fs-1 d-block mb-3 opacity-25"></i>
+                <h5>Chưa có BĐS nổi bật</h5>
+                <p class="small">Hãy quay lại sau khi có danh sách mới.</p>
             </div>
         {% else %}
-            <div class="row g-3">
-                {% for room in featured %}
-                    <div class="col-sm-6 col-lg-4 col-xl-3">
-                        {% include 'components/_room_card.twig' with { room: room } %}
+            <div class="row g-3" id="featGrid">
+                {% for block in featured %}
+                    {% set is_composite = block.type in ['boarding_house','dormitory','homestay'] %}
+                    <div class="col-sm-6 col-lg-4 col-xl-3 feat-item"
+                         data-type="{{ block.type }}">
+                        <a href="{{ route('/properties/' ~ block.id) }}" class="ho-fp-card">
+
+                            {# Image section #}
+                            <div class="ho-fp-img">
+                                {# Placeholder always present (shows when image missing or fails to load) #}
+                                <div class="ho-fp-noimg">
+                                    <i class="bi bi-building-fill"></i>
+                                </div>
+                                {# Image overlaid above placeholder (z-index:1 covers it when loaded) #}
+                                {% if block.primary_image %}
+                                    <img src="{{ upload_url ~ block.primary_image }}"
+                                         alt="{{ block.name }}"
+                                         onload="this.style.opacity='1'"
+                                         onerror="this.style.display='none'">
+                                {% endif %}
+                                <div class="ho-fp-img-grad"></div>
+
+                                {# Badges — HOT / NEW #}
+                                <div class="ho-fp-badges">
+                                    {% if block.is_hot is defined and block.is_hot %}
+                                        <span class="ho-badge-tag ho-badge-hot">🔥 HOT</span>
+                                    {% endif %}
+                                    {% if block.is_new is defined and block.is_new %}
+                                        <span class="ho-badge-tag ho-badge-new">✨ NEW</span>
+                                    {% endif %}
+                                </div>
+
+                                <span class="ho-type-badge">{{ type_labels[block.type] ?? block.type }}</span>
+
+                                {# Price overlay #}
+                                <div class="ho-fp-img-price">
+                                    {% if is_composite and block.min_display_price %}
+                                        <div class="ho-fp-price-big">{{ block.min_display_price|money }}</div>
+                                        {% if block.max_display_price %}
+                                            <div class="ho-fp-price-unit">~{{ block.max_display_price|money }}/tháng</div>
+                                        {% else %}
+                                            <div class="ho-fp-price-unit">/tháng</div>
+                                        {% endif %}
+                                    {% elseif not is_composite and block.price %}
+                                        <div class="ho-fp-price-big">{{ block.price|money }}</div>
+                                        <div class="ho-fp-price-unit">/tháng</div>
+                                    {% endif %}
+                                </div>
+
+                                {# Hover action buttons #}
+                                <div class="ho-fp-actions">
+                                    {% if auth %}
+                                    <button class="ho-fp-act-btn love" type="button"
+                                            onclick="event.preventDefault();event.stopPropagation();"
+                                            title="Lưu yêu thích">
+                                        <i class="bi bi-heart"></i> Lưu
+                                    </button>
+                                    {% endif %}
+                                    <a class="ho-fp-act-btn call"
+                                       href="{{ route('/properties/' ~ block.id) }}#lien-he"
+                                       onclick="event.stopPropagation()">
+                                        <i class="bi bi-telephone-fill"></i> Liên hệ
+                                    </a>
+                                </div>
+                            </div>
+
+                            {# Card body #}
+                            <div class="ho-fp-body">
+                                <div class="ho-fp-title">{{ block.name }}</div>
+                                <div class="ho-fp-loc">
+                                    <i class="bi bi-geo-alt-fill"></i>
+                                    {{ block.district_name ?? (block.address ? block.address|slice(0,32) : '') }}
+                                </div>
+
+                                {# Amenity pills #}
+                                {% if block.has_wifi or block.has_ac or block.has_parking or block.allow_pet %}
+                                <div class="ho-fp-pills">
+                                    {% if block.has_wifi %}<span class="ho-fp-pill"><i class="bi bi-wifi"></i> WiFi</span>{% endif %}
+                                    {% if block.has_ac %}<span class="ho-fp-pill"><i class="bi bi-snow2"></i> AC</span>{% endif %}
+                                    {% if block.has_parking %}<span class="ho-fp-pill"><i class="bi bi-car-front"></i> Xe</span>{% endif %}
+                                    {% if block.allow_pet %}<span class="ho-fp-pill">🐾 Thú cưng</span>{% endif %}
+                                </div>
+                                {% endif %}
+
+                                {# Footer meta #}
+                                <div class="ho-fp-foot">
+                                    <span class="ho-fp-views">
+                                        {% if is_composite %}
+                                            <i class="bi bi-door-closed"></i> {{ block.room_count|default(0) }} phòng
+                                        {% elseif block.area %}
+                                            <i class="bi bi-aspect-ratio"></i> {{ block.area }}m²
+                                        {% endif %}
+                                    </span>
+                                    <span>
+                                        <i class="bi bi-clock"></i>
+                                        {{ block.created_at|date('d/m/Y') }}
+                                    </span>
+                                </div>
+                            </div>
+
+                        </a>
                     </div>
                 {% endfor %}
             </div>
@@ -188,31 +440,171 @@
     </div>
 </section>
 
-{# ── HOW IT WORKS ── #}
-<section class="py-5 bg-white">
+{# ══════════════════════════════════════════════════════════
+   SECTION 5 — FEATURED LANDLORDS
+══════════════════════════════════════════════════════════ #}
+{% if top_landlords is defined and top_landlords is not empty %}
+<section class="py-5" style="background:#fff">
     <div class="container">
-        <div class="text-center mb-5">
-            <span class="section-label">⚡ Quy trình</span>
-            <h2 class="section-title">Cách thức hoạt động</h2>
-            <p class="section-subtitle">Đơn giản — Nhanh chóng — Tin cậy</p>
+        <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mb-4 ho-reveal">
+            <div>
+                <div class="ho-sec-eyebrow"><i class="bi bi-person-check-fill"></i> Chủ trọ</div>
+                <h2 class="ho-sec-title mb-1">Chủ trọ uy tín</h2>
+                <p class="ho-sec-sub mb-0">Những chủ trọ nhiều listing và đánh giá tốt nhất</p>
+            </div>
         </div>
-        <div class="row g-4 text-center">
+        <div class="ho-lnd-scroll ho-reveal ho-reveal-delay-1">
+            {% for i, landlord in top_landlords %}
+                <a href="{{ route('/properties') }}?landlord_id={{ landlord.id }}" class="ho-lnd-card" style="text-decoration:none;color:inherit;">
+                    <div class="ho-lnd-avatar ho-av-{{ i % 6 }}">
+                        {% if landlord.avatar %}
+                            <img src="{{ upload_url ~ landlord.avatar }}" alt="{{ landlord.name }}">
+                        {% else %}
+                            {{ landlord.name|slice(0,1)|upper }}
+                        {% endif %}
+                    </div>
+                    <div class="ho-lnd-name">{{ landlord.name }}</div>
+                    <div class="ho-lnd-count">
+                        <i class="bi bi-building me-1"></i>{{ landlord.listing_count }} BĐS
+                    </div>
+                    <div class="ho-lnd-stars">
+                        {% for s in range(1, 5) %}
+                            {% if s <= landlord.avg_rating|round(0, 'floor') %}
+                                <i class="bi bi-star-fill"></i>
+                            {% else %}
+                                <i class="bi bi-star"></i>
+                            {% endif %}
+                        {% endfor %}
+                        <small class="ms-1 text-muted">{{ landlord.avg_rating ? landlord.avg_rating|number_format(1) : '—' }}</small>
+                    </div>
+                    <div class="ho-lnd-see"><i class="bi bi-arrow-right me-1"></i>Xem BĐS</div>
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+{# ══════════════════════════════════════════════════════════
+   SECTION 6 — BANNER CAROUSEL
+══════════════════════════════════════════════════════════ #}
+{% if banners is not empty %}
+<section class="py-3" style="background:var(--color-bg,#f8f8f6)">
+    <div class="container">
+        <div id="homeBannerCarousel" class="carousel slide carousel-fade"
+             data-bs-ride="carousel" data-bs-interval="4500"
+             style="border-radius:18px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,.10);">
+            <div class="carousel-indicators">
+                {% for banner in banners %}
+                    <button type="button" data-bs-target="#homeBannerCarousel"
+                            data-bs-slide-to="{{ loop.index0 }}"
+                            class="{{ loop.first ? 'active' : '' }}"></button>
+                {% endfor %}
+            </div>
+            <div class="carousel-inner">
+                {% for banner in banners %}
+                    <div class="carousel-item {{ loop.first ? 'active' : '' }}">
+                        {% if banner.link %}<a href="{{ banner.link }}" target="_blank" rel="noopener noreferrer">{% endif %}
+                        <img src="{{ upload_url ~ banner.image_url }}" class="d-block w-100"
+                             alt="Banner {{ loop.index }}" loading="lazy"
+                             style="max-height:380px;object-fit:cover;">
+                        {% if banner.link %}</a>{% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+            <button class="carousel-control-prev" type="button"
+                    data-bs-target="#homeBannerCarousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon"></span>
+            </button>
+            <button class="carousel-control-next" type="button"
+                    data-bs-target="#homeBannerCarousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon"></span>
+            </button>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+{# ══════════════════════════════════════════════════════════
+   SECTION 7 — MAP PREVIEW
+══════════════════════════════════════════════════════════ #}
+<section class="py-5" style="background:var(--color-bg-soft,#f3f4f6)">
+    <div class="container">
+        <div class="row align-items-center g-4 g-lg-5 ho-reveal">
+            <div class="col-lg-4">
+                <div class="ho-sec-eyebrow"><i class="bi bi-map-fill"></i> Bản đồ</div>
+                <h2 class="ho-sec-title mb-3">Tìm phòng ngay trên bản đồ</h2>
+                <p class="ho-sec-sub mb-4">
+                    Xem vị trí các phòng trọ, nhà trọ trực tiếp trên bản đồ Cần Thơ.<br>
+                    Chọn khu vực gần nơi làm việc, trường học dễ dàng hơn.
+                </p>
+                <div class="d-flex flex-column gap-3 mb-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="ho-step-icon orange" style="width:46px;height:46px;border-radius:12px;font-size:1.1rem;flex-shrink:0">
+                            <i class="bi bi-pin-map-fill"></i>
+                        </div>
+                        <div>
+                            <div class="fw-700 small">Vị trí chính xác</div>
+                            <p class="text-muted mb-0" style="font-size:.8rem">Mỗi BĐS được gắn tọa độ GPS cụ thể</p>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="ho-step-icon blue" style="width:46px;height:46px;border-radius:12px;font-size:1.1rem;flex-shrink:0">
+                            <i class="bi bi-rulers"></i>
+                        </div>
+                        <div>
+                            <div class="fw-700 small">Tìm theo bán kính</div>
+                            <p class="text-muted mb-0" style="font-size:.8rem">Lọc phòng gần trường, cơ quan của bạn</p>
+                        </div>
+                    </div>
+                </div>
+                <a href="{{ route('/properties') }}" class="btn btn-primary rounded-pill px-4 fw-700">
+                    <i class="bi bi-map me-2"></i>Tìm trên bản đồ
+                </a>
+            </div>
+            <div class="col-lg-8 ho-reveal ho-reveal-delay-2">
+                <div class="ho-map-outer">
+                    <div id="hoMapCanvas"></div>
+                    <div class="ho-map-badge">
+                        <i class="bi bi-geo-alt-fill text-danger"></i>
+                        Cần Thơ — trung tâm ĐBSCL
+                    </div>
+                    <a href="{{ route('/properties') }}" class="ho-map-cta">
+                        <i class="bi bi-arrows-fullscreen"></i>
+                        Mở bản đồ đầy đủ
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{# ══════════════════════════════════════════════════════════
+   SECTION 8 — HOW IT WORKS
+══════════════════════════════════════════════════════════ #}
+<section class="py-5" style="background:#fff">
+    <div class="container">
+        <div class="text-center mb-5 ho-reveal">
+            <div class="ho-sec-eyebrow justify-content-center"><i class="bi bi-lightning-charge-fill"></i> Quy trình</div>
+            <h2 class="ho-sec-title">Chỉ 4 bước để thuê phòng</h2>
+            <p class="ho-sec-sub">Đơn giản · Nhanh chóng · Tin cậy</p>
+        </div>
+        <div class="row g-3">
             {% set steps = [
-                {icon:'bi-search',      title:'Tìm kiếm',       desc:'Nhập địa chỉ hoặc khu vực. Lọc theo giá, tiện ích.',         color:'orange'},
-                {icon:'bi-eye',         title:'Xem thông tin',   desc:'Xem đầy đủ ảnh, tiện ích, giá điện nước, chính sách.',      color:'blue'},
-                {icon:'bi-telephone',   title:'Liên hệ chủ trọ', desc:'Gửi tin nhắn hoặc gọi điện trực tiếp cho chủ trọ.',         color:'green'},
-                {icon:'bi-house-check', title:'Chuyển vào ở',    desc:'Xem thực tế và chuyển vào phòng. Đánh giá giúp cộng đồng.', color:'red'}
+                {icon:'bi-search',           color:'orange', title:'Tìm kiếm',        desc:'Nhập địa chỉ hoặc chọn khu vực. Lọc theo giá và tiện ích mong muốn.'},
+                {icon:'bi-eye-fill',          color:'blue',   title:'Xem thông tin',   desc:'Xem đầy đủ ảnh, tiện ích, giá điện nước và chính sách nhà trọ.'},
+                {icon:'bi-telephone-fill',    color:'green',  title:'Liên hệ chủ trọ', desc:'Gửi tin nhắn hoặc gọi điện trực tiếp. 100% thông tin thật.'},
+                {icon:'bi-house-check-fill',  color:'purple', title:'Chuyển vào ở',    desc:'Xem thực tế, ký hợp đồng và đánh giá để giúp cộng đồng.'}
             ] %}
             {% for i, step in steps %}
-                <div class="col-6 col-md-3">
-                    <div class="p-3">
-                        <div class="stat-icon-box {{ step.color }} mx-auto mb-3"
-                             style="width:60px;height:60px;font-size:26px;border-radius:16px;">
+                <div class="col-6 col-md-3 ho-reveal ho-reveal-delay-{{ i + 1 }}">
+                    <div class="ho-step-card" data-step="{{ i + 1 }}">
+                        <div class="ho-step-icon {{ step.color }}">
                             <i class="bi {{ step.icon }}"></i>
                         </div>
-                        <div class="badge rounded-pill bg-light text-muted mb-2">Bước {{ i + 1 }}</div>
-                        <h5 class="fw-700 mb-2">{{ step.title }}</h5>
-                        <p class="text-muted small mb-0">{{ step.desc }}</p>
+                        <div class="ho-step-num">Bước {{ i + 1 }}</div>
+                        <h5 class="ho-step-title">{{ step.title }}</h5>
+                        <p class="ho-step-desc">{{ step.desc }}</p>
                     </div>
                 </div>
             {% endfor %}
@@ -220,18 +612,34 @@
     </div>
 </section>
 
-{# ── CTA ── #}
-<section class="py-5" style="background:linear-gradient(135deg,var(--secondary),var(--secondary-light))">
-    <div class="container text-center">
-        <h2 class="text-white fw-800 mb-3">Bạn có phòng muốn cho thuê?</h2>
-        <p class="text-white-50 mb-4">Đăng tin miễn phí, tiếp cận hàng nghìn người tìm thuê mỗi ngày</p>
-        <div class="d-flex gap-3 justify-content-center flex-wrap">
-            <a href="{{ route('/register') }}?role=landlord" class="btn btn-primary btn-lg px-5 fw-600">
-                <i class="bi bi-plus-circle me-2"></i>Đăng tin miễn phí
-            </a>
-            <a href="{{ route('/rooms') }}" class="btn btn-outline-light btn-lg px-5 fw-600">
-                Xem phòng trọ
-            </a>
+{# ══════════════════════════════════════════════════════════
+   SECTION 9 — CTA
+══════════════════════════════════════════════════════════ #}
+<section class="ho-cta-section py-5">
+    <div class="container position-relative" style="z-index:2">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 text-center ho-reveal">
+                <span style="font-size:3rem;display:block;margin-bottom:16px;">🏠</span>
+                <h2 class="text-white fw-900 mb-3" style="font-size:clamp(1.6rem,4vw,2.5rem);line-height:1.2">
+                    Bạn có phòng muốn cho thuê?
+                </h2>
+                <p style="color:rgba(255,255,255,.75);font-size:1.05rem;margin-bottom:32px">
+                    Đăng tin miễn phí — Tiếp cận hàng nghìn người thuê phòng mỗi ngày<br>
+                    Đã có <strong class="text-warning">{{ stats.approved }}+</strong> phòng được đăng thành công
+                </p>
+                <div class="d-flex gap-3 justify-content-center flex-wrap">
+                    <a href="{{ route('/register') }}?role=landlord"
+                       class="btn btn-primary btn-lg fw-700"
+                       style="border-radius:30px;padding:14px 36px;">
+                        <i class="bi bi-plus-circle-fill me-2"></i>Đăng tin miễn phí
+                    </a>
+                    <a href="{{ route('/properties') }}"
+                       class="btn btn-outline-light btn-lg fw-700"
+                       style="border-radius:30px;padding:14px 36px;">
+                        <i class="bi bi-search me-2"></i>Tìm phòng ngay
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 </section>
@@ -239,5 +647,253 @@
 {% endblock %}
 
 {% block scripts %}
-<style>.quick-link:hover { color: var(--primary) !important; }</style>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function () {
+'use strict';
+
+/* ── 1. Featured property tab filter ─────────────────────── */
+var tabs  = document.querySelectorAll('.ho-feat-tab');
+var items = document.querySelectorAll('.feat-item');
+tabs.forEach(function(tab) {
+    tab.addEventListener('click', function() {
+        var type = this.dataset.type;
+        tabs.forEach(function(t) { t.classList.remove('active'); });
+        this.classList.add('active');
+        items.forEach(function(item) {
+            item.style.display = (!type || item.dataset.type === type) ? '' : 'none';
+        });
+    });
+});
+
+/* ── 2. Smart search autocomplete ────────────────────────── */
+var suggestions = [
+    {% for w in ward_stats %}
+    { label: "{{ w.name|e('js') }}", type: 'ward', id: "{{ w.id }}" },
+    {% endfor %}
+    { label: 'Đại học Cần Thơ', type: 'keyword' },
+    { label: 'Bệnh viện Đa khoa',  type: 'keyword' },
+    { label: 'Có gác lửng',  type: 'keyword' },
+    { label: 'Full nội thất', type: 'keyword' },
+    { label: 'Gần chợ',      type: 'keyword' }
+];
+
+var kwInput = document.getElementById('heroKeyword');
+var acPanel = document.getElementById('heroAC');
+var wardSel = document.querySelector('[name="ward_id"]');
+
+function buildSuggest(val) {
+    var q = val.trim().toLowerCase();
+    if (!q || q.length < 1) { acPanel.classList.remove('open'); return; }
+
+    var matched = suggestions.filter(function(s) {
+        return s.label.toLowerCase().indexOf(q) !== -1;
+    }).slice(0, 6);
+
+    if (!matched.length) { acPanel.classList.remove('open'); return; }
+
+    var html = matched.map(function(s) {
+        var icon = s.type === 'ward' ? 'bi-geo-alt-fill' : 'bi-search';
+        return '<div class="ho-ac-item" data-val="' + s.label + '" data-ward="' + (s.id || '') + '">' +
+               '<i class="bi ' + icon + '"></i> ' + s.label + '</div>';
+    }).join('');
+    acPanel.innerHTML = html;
+    acPanel.classList.add('open');
+
+    acPanel.querySelectorAll('.ho-ac-item').forEach(function(item) {
+        item.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            kwInput.value = this.dataset.val;
+            if (this.dataset.ward && wardSel) {
+                wardSel.value = this.dataset.ward;
+            }
+            acPanel.classList.remove('open');
+        });
+    });
+}
+
+if (kwInput) {
+    kwInput.addEventListener('input',  function() { buildSuggest(this.value); });
+    kwInput.addEventListener('focus',  function() { buildSuggest(this.value); });
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#heroSearchBox')) acPanel.classList.remove('open');
+    });
+}
+
+/* ── 3. Count-up animation ───────────────────────────────── */
+function easeOut(t) { return 1 - Math.pow(1 - t, 4); }
+
+function runCountUp(el, target, isFloat, duration) {
+    var start = performance.now();
+    (function tick(now) {
+        var progress = Math.min((now - start) / duration, 1);
+        var val = isFloat
+            ? (easeOut(progress) * target).toFixed(1)
+            : Math.round(easeOut(progress) * target);
+        el.textContent = val + (isFloat ? '' : '+');
+        if (progress < 1) requestAnimationFrame(tick);
+    })(performance.now());
+}
+
+var countersStarted = false;
+var statsRow = document.querySelector('.ho-stats-row');
+if (statsRow && 'IntersectionObserver' in window) {
+    var statsObs = new IntersectionObserver(function(entries) {
+        if (entries[0].isIntersecting && !countersStarted) {
+            countersStarted = true;
+            document.querySelectorAll('.ho-stat-num').forEach(function(el) {
+                var target = parseFloat(el.dataset.target || el.dataset.targetFloat || 0);
+                var isFloat = !!el.dataset.targetFloat;
+                setTimeout(function() { runCountUp(el, target, isFloat, 1800); }, 100);
+            });
+        }
+    }, { threshold: 0 });
+    statsObs.observe(statsRow);
+}
+
+/* ── 4. Scroll reveal ────────────────────────────────────── */
+if ('IntersectionObserver' in window) {
+    var revealObs = new IntersectionObserver(function(entries) {
+        entries.forEach(function(e) {
+            if (e.isIntersecting) e.target.classList.add('visible');
+        });
+    }, { threshold: 0, rootMargin: '0px 0px -20px 0px' });
+    document.querySelectorAll('.ho-reveal').forEach(function(el) {
+        revealObs.observe(el);
+    });
+}
+
+/* ── 5. Leaflet mini map ─────────────────────────────────── */
+var mapEl = document.getElementById('hoMapCanvas');
+if (mapEl && typeof L !== 'undefined') {
+    var map = L.map('hoMapCanvas', {
+        center: [10.0307, 105.7769],
+        zoom: 12,
+        zoomControl: true,
+        scrollWheelZoom: false,
+        attributionControl: false
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18
+    }).addTo(map);
+
+    /* Custom orange pin icon */
+    var pinIcon = L.divIcon({
+        html: '<div style="width:14px;height:14px;border-radius:50%;background:#f97316;border:2.5px solid #fff;box-shadow:0 2px 8px rgba(249,115,22,.5)"></div>',
+        className: '',
+        iconSize: [14, 14],
+        iconAnchor: [7, 7]
+    });
+
+    var pins = [
+        { lat: 10.0342, lng: 105.7707, name: 'Ninh Kiều' },
+        { lat: 9.9984,  lng: 105.7744, name: 'Cái Răng' },
+        { lat: 10.0628, lng: 105.7282, name: 'Bình Thủy' },
+        { lat: 10.1396, lng: 105.6817, name: 'Ô Môn' },
+        { lat: 10.2540, lng: 105.5887, name: 'Thốt Nốt' }
+    ];
+
+    pins.forEach(function(p) {
+        L.marker([p.lat, p.lng], { icon: pinIcon })
+            .addTo(map)
+            .bindPopup('<strong>' + p.name + '</strong><br><small>Có phòng cho thuê</small>');
+    });
+}
+
+/* ── 6. Ward carousel — Netflix-style arrow navigation ─────── */
+(function() {
+    var wrap    = document.getElementById('hoWardWrap');
+    var track   = document.getElementById('hoWardTrack');
+    var prevBtn = document.getElementById('hoWardPrev');
+    var nextBtn = document.getElementById('hoWardNext');
+    if (!track || !wrap || !prevBtn || !nextBtn) return;
+
+    var GAP     = 16;
+    var VISIBLE = 5;
+    var current = 0;   // index of leftmost visible card
+    var cards   = Array.from(track.querySelectorAll('.ho-area-card'));
+    var total   = cards.length;
+    var maxIdx  = Math.max(0, total - VISIBLE);
+    var cardW   = 0;
+    var sliding = false;
+
+    /* ── Size cards to fill wrapper exactly VISIBLE slots ── */
+    function calcSizes() {
+        cardW = Math.floor((wrap.offsetWidth - (VISIBLE - 1) * GAP) / VISIBLE);
+        wrap.style.setProperty('--card-w', cardW + 'px');
+    }
+
+    /* ── Translate track to index ── */
+    function goTo(idx, animate) {
+        if (sliding && animate) return;
+        // Clamp
+        idx = Math.max(0, Math.min(idx, maxIdx));
+        if (idx === current && animate) return;
+        current = idx;
+
+        var offset = current * (cardW + GAP);
+        if (animate) {
+            sliding = true;
+            track.style.transition = 'transform .52s cubic-bezier(.4,0,.2,1)';
+            track.addEventListener('transitionend', function onDone() {
+                track.removeEventListener('transitionend', onDone);
+                sliding = false;
+            });
+        } else {
+            track.style.transition = 'none';
+        }
+        track.style.transform = 'translateX(' + (-offset) + 'px)';
+        updateControls();
+    }
+
+    /* ── Prev / Next buttons ── */
+    nextBtn.addEventListener('click', function() { goTo(current + 1, true); });
+    prevBtn.addEventListener('click', function() { goTo(current - 1, true); });
+
+    /* ── Keyboard arrow support ── */
+    wrap.addEventListener('keydown', function(e) {
+        if (e.key === 'ArrowRight') { e.preventDefault(); goTo(current + 1, true); }
+        if (e.key === 'ArrowLeft')  { e.preventDefault(); goTo(current - 1, true); }
+    });
+
+    /* ── Touch / swipe ── */
+    var tX0 = 0;
+    track.addEventListener('touchstart', function(e) {
+        tX0 = e.touches[0].clientX;
+    }, { passive: true });
+    track.addEventListener('touchend', function(e) {
+        var dx = e.changedTouches[0].clientX - tX0;
+        if (Math.abs(dx) > 44) goTo(current + (dx < 0 ? 1 : -1), true);
+    }, { passive: true });
+
+    /* ── Update arrow state ── */
+    function updateControls() {
+        prevBtn.disabled = current <= 0;
+        nextBtn.disabled = current >= maxIdx;
+    }
+
+    /* ── Init ── */
+    calcSizes();
+    goTo(0, false);
+    updateControls();
+
+    /* ── Recalc on resize ── */
+    var resizeTimer;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function() {
+            /* Recalculate VISIBLE based on viewport */
+            VISIBLE = window.innerWidth < 640 ? 2 : window.innerWidth < 900 ? 3 : 5;
+            maxIdx  = Math.max(0, total - VISIBLE);
+            current = Math.min(current, maxIdx);
+            calcSizes();
+            goTo(current, false);
+            updateControls();
+        }, 120);
+    });
+})();
+
+})();
+</script>
 {% endblock %}

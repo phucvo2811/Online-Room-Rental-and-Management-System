@@ -17,26 +17,44 @@
 
 <div class="row g-3 mb-4">
     {% set stat_cards = [
-        {val: stats.total,    label: 'Tổng phòng đăng', icon: 'bi-house-door',  color: 'orange'},
-        {val: stats.approved, label: 'Đã được duyệt',   icon: 'bi-check-circle',color: 'green'},
-        {val: stats.pending,  label: 'Đang chờ duyệt',  icon: 'bi-hourglass',   color: 'blue'},
-        {val: stats.users,    label: 'Tổng người dùng', icon: 'bi-people',      color: 'red'}
+        {val: user_stats.total_users,      label: 'Người thuê',     icon: 'bi-person',       color: 'orange'},
+        {val: user_stats.total_landlords,  label: 'Chủ trọ',        icon: 'bi-person-badge', color: 'blue'},
+        {val: room_stats.total_rooms,      label: 'Tổng phòng',      icon: 'bi-house-door',   color: 'green'},
+        {val: room_stats.active_rooms,     label: 'Phòng active',    icon: 'bi-check-circle', color: 'teal'},
+        {val: room_stats.hidden_rooms,     label: 'Phòng ẩn',       icon: 'bi-eye-slash',    color: 'danger'},
+        {val: pro_stats.total_pro_orders,  label: 'Đơn PRO',        icon: 'bi-gem',          color: 'purple'},
+        {val: pro_stats.total_pro_revenue|number_format(0, ',', '.'), label: 'Doanh thu PRO', icon: 'bi-currency-dollar', color: 'success'}
     ] %}
+
     {% for card in stat_cards %}
-        <div class="col-sm-6 col-xl-3">
+        <div class="col-sm-6 col-md-4 col-xl-3">
             <div class="dashboard-stat-card">
                 <div class="stat-icon-box {{ card.color }}">
                     <i class="bi {{ card.icon }}"></i>
                 </div>
                 <div>
-                    <div class="stat-val {{ card.label == 'Đang chờ duyệt' and stats.pending > 0 ? 'text-warning' : '' }}">
-                        {{ card.val }}
-                    </div>
+                    <div class="stat-val">{{ card.val }}</div>
                     <div class="stat-lbl">{{ card.label }}</div>
                 </div>
             </div>
         </div>
     {% endfor %}
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-12 col-xl-6">
+        <div class="card p-3" style="background:#fff;border-radius:12px;">
+            <h6 class="fw-700 mb-3">Tăng trưởng phòng (30 ngày)</h6>
+            <canvas id="roomGrowthChart" height="220"></canvas>
+        </div>
+    </div>
+
+    <div class="col-12 col-xl-6">
+        <div class="card p-3" style="background:#fff;border-radius:12px;">
+            <h6 class="fw-700 mb-3">Doanh thu PRO (12 tháng)</h6>
+            <canvas id="proRevenueChart" height="220"></canvas>
+        </div>
+    </div>
 </div>
 
 <div class="admin-table">
@@ -146,10 +164,54 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 function rejectRoom(id) {
     document.getElementById('rejectForm').action = `{{ app_url }}/admin/rooms/${id}/reject`;
     new bootstrap.Modal(document.getElementById('rejectModal')).show();
 }
+
+(function(){
+    const roomData = {{ room_growth|json_encode|raw }};
+    const proData  = {{ pro_revenue_growth|json_encode|raw }};
+
+    const roomLabels = roomData.map(item=>item.date);
+    const roomValues = roomData.map(item=>parseInt(item.count,10));
+    const revenueLabels = proData.map(item=>item.month);
+    const revenueValues = proData.map(item=>parseFloat(item.revenue));
+
+    if (document.getElementById('roomGrowthChart')) {
+        new Chart(document.getElementById('roomGrowthChart'), {
+            type: 'line',
+            data: {
+                labels: roomLabels,
+                datasets: [{
+                    label: 'Phòng mới',
+                    data: roomValues,
+                    borderColor: '#0d6efd',
+                    backgroundColor: 'rgba(13,110,253,0.2)',
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}}
+        });
+    }
+
+    if (document.getElementById('proRevenueChart')) {
+        new Chart(document.getElementById('proRevenueChart'), {
+            type: 'bar',
+            data: {
+                labels: revenueLabels,
+                datasets: [{
+                    label: 'Doanh thu',
+                    data: revenueValues,
+                    backgroundColor: 'rgba(25,135,84,0.7)'
+                }]
+            },
+            options: {responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}}
+        });
+    }
+})();
 </script>
 {% endblock %}

@@ -1,0 +1,68 @@
+{% extends 'layouts/base.twig' %}
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <h3 class="fw-800 mb-0">Lịch sử thanh toán</h3>
+        <a href="{{ route('/payment/packages') }}" class="btn btn-primary rounded-pill">
+            <i class="bi bi-plus-lg me-1"></i> Nâng cấp PRO
+        </a>
+    </div>
+
+    {% if payments is empty %}
+        <div class="card border-0 shadow-sm p-5 text-center text-muted">
+            <i class="bi bi-receipt fs-1 mb-3 d-block opacity-25"></i>
+            <p class="mb-3">Bạn chưa có giao dịch nào.</p>
+            <a href="{{ route('/payment/packages') }}" class="btn btn-outline-primary rounded-pill">
+                Xem gói PRO
+            </a>
+        </div>
+    {% else %}
+        <div class="card border-0 shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Mã GD</th>
+                            <th>Gói</th>
+                            <th>Số tiền</th>
+                            <th>Ngân hàng</th>
+                            <th>Trạng thái</th>
+                            <th>Ngày</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in payments %}
+                        <tr>
+                            <td class="font-monospace small">{{ p.vnp_txn_ref }}</td>
+                            <td>
+                                {% if packages[p.package_type] is defined %}
+                                    <span class="badge bg-primary rounded-pill">{{ packages[p.package_type].label }}</span>
+                                {% else %}
+                                    {{ p.package_type }}
+                                {% endif %}
+                            </td>
+                            <td class="fw-600">{{ p.amount|number_format(0,',','.') }}đ</td>
+                            <td>{{ p.vnp_bank_code ?? '—' }}</td>
+                            <td>
+                                {% if p.status == 'success' %}
+                                    <span class="badge bg-success">Thành công</span>
+                                {% elseif p.status == 'pending' %}
+                                    <span class="badge bg-warning text-dark">Chờ xử lý</span>
+                                {% elseif p.status == 'failed' %}
+                                    <span class="badge bg-danger">Thất bại</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ p.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="small text-muted">{{ p.created_at|date('H:i d/m/Y') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

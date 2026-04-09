@@ -1,0 +1,38 @@
+{% extends 'layouts/base.twig' %}
+{% block title %}{{ post.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="card">
+        <div class="row g-0">
+            {% if post.image_url %}
+                <div class="col-md-4">
+                    <img src="{{ post.image_url }}" class="img-fluid rounded-start" alt="{{ post.title }}" style="object-fit: cover; height: 220px; width: 100%;">
+                </div>
+            {% endif %}
+            <div class="col">
+                <div class="card-body">
+                    <h3 class="card-title">{{ post.title }}</h3>
+                    <p class="text-muted mb-2">{{ block ? (block.name ~ ' - ' ~ block.type)|replace({'boarding_house':'Nhà trọ','dormitory':'Ký túc xá','mini_house':'Mini house','full_house':'Full house','homestay':'Homestay'}) : 'Bài đăng độc lập' }}</p>
+                    <p class="card-text">{{ post.description }}</p>
+                    {% if post.price_low or post.price_high %}
+                        <p class="fw-bold">
+                            Giá:
+                            {{ post.price_low ? post.price_low|money ~ '₫' : '' }}
+                            {{ post.price_high ? ' - ' ~ post.price_high|money ~ '₫' : '' }}
+                        </p>
+                    {% endif %}
+
+                    {% if room %}
+                        <p class="small text-muted">Thông tin phòng tham chiếu: {{ room.title }}</p>
+                    {% endif %}
+
+                    {% if post.status %}
+                        <span class="badge bg-{{ post.status == 'active' ? 'success' : 'secondary' }}">{{ post.status }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

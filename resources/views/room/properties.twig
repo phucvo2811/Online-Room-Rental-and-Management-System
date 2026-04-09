@@ -1,0 +1,204 @@
+{% extends 'layouts/base.twig' %}
+{% block title %}BĐS cho thuê{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ asset('css/components/filter.css') }}?v=1">
+<style>
+.featured-prop-card {
+    border-radius: 16px; overflow: hidden;
+    border: 1.5px solid var(--color-border);
+    background: #fff; transition: all .22s;
+    display: flex; flex-direction: column;
+    box-shadow: 0 2px 12px rgba(0,0,0,.06);
+}
+.featured-prop-card:hover {
+    border-color: var(--color-primary);
+    box-shadow: 0 10px 30px rgba(249,115,22,.18);
+    transform: translateY(-4px);
+}
+.featured-prop-img {
+    position: relative; height: 180px; overflow: hidden;
+    background: var(--color-bg-soft);
+}
+.featured-prop-img img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+    transition: transform .4s ease;
+}
+.featured-prop-card:hover .featured-prop-img img { transform: scale(1.07); }
+.featured-prop-noimg {
+    height: 100%; display: flex; align-items: center; justify-content: center;
+    color: var(--color-text-muted); font-size: 2.5rem;
+}
+.featured-type-badge {
+    position: absolute; top: 10px; left: 10px;
+    background: rgba(0,0,0,.6); color: #fff;
+    font-size: .68rem; font-weight: 700; letter-spacing: .04em;
+    padding: 3px 9px; border-radius: 20px; backdrop-filter: blur(4px);
+}
+.featured-wifi-badge {
+    position: absolute; top: 10px; right: 10px;
+    background: var(--color-primary); color: #fff;
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .8rem;
+}
+.featured-prop-body { padding: 14px; flex: 1; display: flex; flex-direction: column; gap: 5px; }
+.featured-prop-title {
+    font-weight: 800; font-size: .9rem; line-height: 1.3;
+    overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    color: var(--color-text);
+}
+.featured-prop-location { font-size: .75rem; color: var(--color-text-muted); display: flex; align-items: center; gap: 4px; }
+.featured-prop-location i { color: var(--color-primary); font-size: .8rem; }
+.featured-amenity-row { display: flex; flex-wrap: wrap; gap: 5px; }
+.featured-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: .7rem; font-weight: 600;
+    padding: 3px 8px; border-radius: 20px;
+    background: #f5f5f5; border: 1px solid #e8e8e8;
+    color: var(--color-text-muted);
+}
+.featured-price-row {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    margin-top: auto; padding-top: 6px; border-top: 1px solid var(--color-border);
+}
+.featured-price { font-weight: 900; font-size: 1rem; color: var(--color-primary); }
+.featured-price-sep { color: var(--color-text-muted); font-size: .8rem; margin: 0 2px; }
+.featured-price-unit { font-size: .72rem; color: var(--color-text-muted); font-weight: 400; }
+.featured-meta { font-size: .75rem; color: var(--color-text-muted); display: flex; align-items: center; gap: 4px; }
+</style>
+{% endblock %}
+
+{% block content %}
+{% set type_labels = {
+    'boarding_house': 'Nhà trọ',
+    'dormitory':      'KTX',
+    'homestay':       'Homestay',
+    'mini_house':     'Căn hộ Mini',
+    'full_house':     'Nhà nguyên căn'
+} %}
+
+{# ── Filter bar (sticky horizontal) ── #}
+{% include 'components/filter-bar.twig' %}
+
+{# ── Mobile bottom sheet modal ── #}
+{% include 'components/filter-modal.twig' %}
+
+<div class="container py-4">
+
+    {% if activeLandlord is defined and activeLandlord %}
+    <div class="d-flex align-items-center gap-3 mb-4 p-3" style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:12px;">
+        <div style="width:46px;height:46px;border-radius:50%;overflow:hidden;background:#f3f4f6;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.1rem;color:var(--color-primary);border:2px solid var(--color-primary-light);">
+            {% if activeLandlord.avatar %}
+                <img src="{{ upload_url ~ activeLandlord.avatar }}" style="width:100%;height:100%;object-fit:cover;" alt="">
+            {% else %}
+                {{ activeLandlord.name|first|upper }}
+            {% endif %}
+        </div>
+        <div class="flex-grow-1">
+            <div class="fw-800" style="font-size:.95rem;">BĐS của {{ activeLandlord.name }}</div>
+            <div class="text-muted small">Đang xem toàn bộ bất động sản của chủ trọ này</div>
+        </div>
+        <a href="{{ route('/properties') }}" class="btn btn-sm btn-outline-secondary" style="border-radius:20px;flex-shrink:0;">
+            <i class="bi bi-x me-1"></i>Bỏ lọc
+        </a>
+    </div>
+    {% endif %}
+
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <p class="text-muted mb-0 small"><strong>{{ blocks|length }}</strong> bất động sản tìm thấy</p>
+        {% if auth and auth.role in ['landlord','admin'] %}
+            <a href="{{ route('/blocks/create') }}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-plus-lg me-1"></i>Tạo BĐS mới
+            </a>
+        {% endif %}
+    </div>
+
+    {% if blocks is empty %}
+        <div class="empty-state">
+            <div class="icon"><i class="bi bi-building"></i></div>
+            <h5>Không tìm thấy BĐS nào</h5>
+            <p>Thử thay đổi bộ lọc hoặc tìm kiếm từ khóa khác.</p>
+            <a href="{{ route('/properties') }}" class="btn btn-outline-primary">Xóa bộ lọc</a>
+        </div>
+    {% else %}
+        <div class="row g-3">
+            {% for block in blocks %}
+                {% set is_composite = block.type in ['boarding_house','dormitory','homestay'] %}
+                <div class="col-sm-6 col-lg-4 col-xl-3">
+                    <a href="{{ route('/properties/' ~ block.id) }}" class="text-decoration-none" style="color:inherit;">
+                    <div class="h-100 featured-prop-card">
+
+                        {# Image with overlay badges #}
+                        <div class="featured-prop-img">
+                            {% if block.primary_image %}
+                                <img src="{{ upload_url ~ block.primary_image }}" alt="{{ block.name }}" loading="lazy">
+                            {% else %}
+                                <div class="featured-prop-noimg">
+                                    <i class="bi bi-building-fill"></i>
+                                </div>
+                            {% endif %}
+                            <span class="featured-type-badge">{{ type_labels[block.type] ?? block.type }}</span>
+                            {% if block.has_wifi %}
+                                <span class="featured-wifi-badge"><i class="bi bi-wifi"></i></span>
+                            {% endif %}
+                        </div>
+
+                        {# Card body #}
+                        <div class="featured-prop-body">
+                            <div class="featured-prop-title">{{ block.name }}</div>
+                            <div class="featured-prop-location">
+                                <i class="bi bi-geo-alt-fill"></i>
+                                {{ block.district_name ?? (block.address|slice(0,30)) }}
+                            </div>
+
+                            {# Amenity pills #}
+                            {% if block.has_ac or block.has_parking or block.allow_pet or block.allow_cooking %}
+                            <div class="featured-amenity-row">
+                                {% if block.has_ac %}<span class="featured-pill"><i class="bi bi-snow2 text-info"></i> AC</span>{% endif %}
+                                {% if block.has_parking %}<span class="featured-pill"><i class="bi bi-car-front"></i> Xe</span>{% endif %}
+                                {% if block.allow_pet %}<span class="featured-pill"><i class="bi bi-heart-fill text-danger"></i> Thú</span>{% endif %}
+                                {% if block.allow_cooking %}<span class="featured-pill"><i class="bi bi-fire text-warning"></i> Bếp</span>{% endif %}
+                            </div>
+                            {% endif %}
+
+                            {# Price row #}
+                            <div class="featured-price-row">
+                                <div>
+                                    {% if is_composite %}
+                                        {% if block.min_display_price %}
+                                        <span class="featured-price">{{ block.min_display_price|money }}</span>
+                                        {% if block.max_display_price and block.max_display_price != block.min_display_price %}
+                                        <span class="featured-price-sep">—</span>
+                                        <span class="featured-price">{{ block.max_display_price|money }}</span>
+                                        {% endif %}
+                                        {% else %}<span class="text-muted small">Liên hệ giá</span>{% endif %}
+                                    {% else %}
+                                        {% if block.price %}
+                                        <span class="featured-price">{{ block.price|money }}</span>
+                                        {% else %}<span class="text-muted small">Liên hệ giá</span>{% endif %}
+                                    {% endif %}
+                                    <span class="featured-price-unit">/tháng</span>
+                                </div>
+                                <div class="featured-meta">
+                                    {% if is_composite %}
+                                        <i class="bi bi-door-closed"></i> {{ block.room_count|default(0) }}
+                                    {% elseif block.area %}
+                                        <i class="bi bi-aspect-ratio"></i> {{ block.area }}m²
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                    </a>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ asset('js/filter.js') }}?v=1"></script>
+{% endblock %}

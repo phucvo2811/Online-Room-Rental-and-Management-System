@@ -1,0 +1,1148 @@
+{% extends 'layouts/base.twig' %}
+{% block title %}{{ block.name }}{% endblock %}
+
+{% block head %}
+<style>
+/* Property Detail - Shopee / CellphoneS Style */
+
+/* Gallery */
+.pd-gallery-main {
+    border-radius: 14px; overflow: hidden;
+    background: #f5f5f5; position: relative;
+}
+.pd-gallery-main > img {
+    width: 100%; height: 440px; object-fit: cover;
+    display: block; transition: transform .4s ease;
+}
+.pd-gallery-main:hover > img { transform: scale(1.04); }
+.pd-gallery-counter {
+    position: absolute; bottom: 12px; right: 12px;
+    background: rgba(0,0,0,.55); color: #fff;
+    font-size: .75rem; padding: 3px 10px;
+    border-radius: 20px; backdrop-filter: blur(4px);
+}
+.pd-gallery-no-img {
+    height: 440px; display: flex; align-items: center;
+    justify-content: center; background: var(--color-bg-soft);
+    border-radius: 14px; color: var(--color-text-light);
+    flex-direction: column; gap: 12px;
+}
+.pd-thumb-strip {
+    display: flex; gap: 8px; margin-top: 10px;
+    overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin;
+}
+.pd-thumb {
+    flex-shrink: 0; width: 80px; height: 62px;
+    border-radius: 8px; object-fit: cover; cursor: pointer;
+    border: 2.5px solid transparent; opacity: .65;
+    transition: all .2s; display: block;
+}
+.pd-thumb:hover, .pd-thumb.active { border-color: var(--color-primary); opacity: 1; }
+
+/* Sticky price panel */
+.pd-price-panel {
+    position: sticky; top: 76px; border-radius: 16px;
+    overflow: hidden; box-shadow: 0 4px 28px rgba(0,0,0,.12);
+    border: 1.5px solid var(--color-border); background: #fff;
+}
+.pd-price-header {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+    padding: 22px 24px 18px; color: #fff;
+}
+.pd-title-text { font-size: 1.2rem; font-weight: 800; line-height: 1.3; margin: 8px 0 6px; }
+.pd-price-amount { font-size: 2rem; font-weight: 900; line-height: 1; letter-spacing: -.03em; }
+.pd-price-body { padding: 20px 24px; }
+
+/* Stat chips */
+.pd-stat-chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--color-bg-soft); border: 1.5px solid var(--color-border);
+    border-radius: 10px; padding: 8px 14px;
+    font-size: .83rem; font-weight: 600; color: var(--color-text);
+}
+.pd-stat-chip i { color: var(--color-primary); font-size: 1rem; }
+
+/* Amenity chips */
+.pd-amenity-chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: #FFF7ED; border: 1.5px solid var(--color-primary-light);
+    border-radius: 30px; padding: 6px 14px;
+    font-size: .82rem; font-weight: 600; color: var(--color-primary-dark);
+}
+.pd-amenity-chip.neutral {
+    background: #f8f9fa; border-color: var(--color-border); color: var(--color-text-muted);
+}
+
+/* Section label */
+.pd-section-label {
+    font-size: .7rem; font-weight: 700; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--color-text-light);
+    margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+}
+.pd-section-label::after { content: ''; flex: 1; height: 1px; background: var(--color-border); }
+
+/* Utility cost table */
+.pd-utility-table { border-radius: 10px; overflow: hidden; border: 1.5px solid var(--color-border); }
+.pd-utility-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 11px 16px; border-bottom: 1px solid var(--color-border); font-size: .85rem;
+}
+.pd-utility-row:last-child { border-bottom: none; }
+.pd-utility-label { display: flex; align-items: center; gap: 8px; color: var(--color-text-muted); }
+.pd-utility-value { font-weight: 700; color: var(--color-text); }
+
+/* Address box */
+.pd-address-box { background: var(--color-bg-soft); border-radius: 10px; padding: 14px 16px; font-size: .85rem; }
+
+/* Section divider */
+.pd-section { margin-top: 28px; padding-top: 24px; border-top: 1.5px solid var(--color-border); }
+
+/* Map display */
+.pd-map-canvas {
+    width: 100%; height: 340px; border-radius: 12px;
+    border: 1.5px solid var(--color-border); overflow: hidden;
+    background: #f0f0f0;
+}
+@media (max-width: 767.98px) { .pd-map-canvas { height: 240px; } }
+.pd-map-open-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: .82rem; font-weight: 600;
+    color: var(--color-primary); text-decoration: none;
+    border: 1.5px solid var(--color-primary-light,#fed7aa);
+    border-radius: 20px; padding: 5px 14px; transition: all .18s;
+    background: #fff7ed;
+}
+.pd-map-open-btn:hover { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
+
+/* Description */
+.pd-description { font-size: .92rem; line-height: 1.8; color: var(--color-text-muted); white-space: pre-line; }
+
+/* Similar card */
+.pd-sim-card {
+    border-radius: 12px; overflow: hidden; border: 1.5px solid var(--color-border);
+    transition: all .22s; background: #fff; display: block; text-decoration: none; color: inherit;
+}
+.pd-sim-card:hover {
+    border-color: var(--color-primary); box-shadow: 0 8px 24px rgba(249,115,22,.15);
+    transform: translateY(-3px); color: inherit;
+}
+.pd-sim-img { width: 100%; height: 150px; object-fit: cover; display: block; }
+.pd-sim-no-img {
+    height: 150px; background: var(--color-bg-soft);
+    display: flex; align-items: center; justify-content: center; color: var(--color-text-light);
+}
+
+/* Mobile sticky CTA */
+.pd-mobile-cta {
+    display: none; position: fixed; bottom: 0; left: 0; right: 0;
+    background: #fff; border-top: 1.5px solid var(--color-border);
+    padding: 12px 16px; z-index: 999; align-items: center; gap: 12px;
+    box-shadow: 0 -4px 20px rgba(0,0,0,.08);
+}
+@media (max-width: 991.98px) {
+    .pd-mobile-cta { display: flex; }
+    body { padding-bottom: 76px; }
+    .pd-price-panel { position: relative; top: auto; }
+    .pd-gallery-main > img { height: 280px; }
+    .pd-gallery-no-img { height: 200px; }
+}
+
+/* Room picker (Layout B) */
+.room-header-banner { height: 300px; overflow: hidden; position: relative; border-radius: 16px 16px 0 0; }
+.room-header-banner img { width: 100%; height: 100%; object-fit: cover; }
+.room-header-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,.72) 0%, rgba(0,0,0,.1) 55%, transparent 100%);
+}
+.room-header-text { position: absolute; bottom: 24px; left: 24px; right: 24px; }
+
+.room-stats-bar { display: flex; flex-wrap: wrap; background: #fafafa; border-top: 1.5px solid var(--color-border); }
+.room-stat-box { flex: 1; padding: 16px 20px; text-align: center; border-right: 1px solid var(--color-border); min-width: 100px; }
+.room-stat-box:last-child { border-right: none; }
+.room-stat-num { font-size: 1.3rem; font-weight: 900; line-height: 1; }
+
+.room-slot-btn {
+    width: 56px; height: 44px; border-radius: 10px; font-size: .78rem; font-weight: 700;
+    border: 2px solid var(--color-border); background: #fff; cursor: pointer; transition: all .15s;
+}
+.room-slot-btn.available { border-color: var(--color-primary); color: var(--color-primary); }
+.room-slot-btn.available:hover, .room-slot-btn.available.active { background: var(--color-primary); color: #fff; }
+.room-slot-btn.rented { background: #f5f5f5; color: #bbb; border-color: #e8e8e8; cursor: default; }
+
+.room-detail-panel { border-radius: 14px; overflow: hidden; border: 1.5px solid var(--color-border); background: #fff; }
+.room-detail-img { height: 260px; overflow: hidden; background: var(--color-bg-soft); }
+.room-detail-img img { width: 100%; height: 100%; object-fit: cover; }
+
+.room-card-grid { border-radius: 10px; border: 1.5px solid var(--color-border); transition: var(--transition); overflow: hidden; }
+.room-card-grid:hover { border-color: var(--color-primary); }
+.room-card-grid.unavail { opacity: .6; }
+
+/* ── Reviews Section ─────────────────────────────────────── */
+.rv-summary-box {
+    display: flex; align-items: center; gap: 24px; flex-wrap: wrap;
+    background: var(--color-bg-soft); border-radius: 14px; padding: 20px 24px; margin-bottom: 24px;
+}
+.rv-big-score {
+    font-size: 3rem; font-weight: 900; color: var(--color-primary); line-height: 1;
+}
+.rv-big-label { font-size: .78rem; color: var(--color-text-muted); margin-top: 4px; }
+.rv-bars { flex: 1; min-width: 180px; }
+.rv-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; font-size: .78rem; }
+.rv-bar-track { flex: 1; height: 6px; background: var(--color-border); border-radius: 4px; overflow: hidden; }
+.rv-bar-fill  { height: 100%; background: var(--color-primary); border-radius: 4px; transition: width .4s; }
+.rv-stars-display { color: #f59e0b; letter-spacing: 2px; font-size: .95rem; }
+.rv-item {
+    display: flex; gap: 14px; padding: 18px 0; border-bottom: 1px solid var(--color-border);
+}
+.rv-item:last-child { border-bottom: none; }
+.rv-avatar {
+    width: 40px; height: 40px; border-radius: 50%; object-fit: cover;
+    background: var(--color-bg-soft); flex-shrink: 0; display: flex;
+    align-items: center; justify-content: center; font-weight: 700;
+    font-size: .95rem; color: var(--color-primary); border: 2px solid var(--color-primary-light);
+    overflow: hidden;
+}
+.rv-name { font-weight: 700; font-size: .9rem; }
+.rv-meta { font-size: .75rem; color: var(--color-text-muted); }
+.rv-comment { font-size: .88rem; color: var(--color-text-muted); margin-top: 6px; line-height: 1.6; }
+.rv-form-card {
+    background: #fff; border: 1.5px solid var(--color-border);
+    border-radius: 14px; padding: 22px 24px; margin-top: 20px;
+}
+.rv-star-picker { display: flex; gap: 6px; flex-direction: row-reverse; justify-content: flex-end; }
+.rv-star-picker input { display: none; }
+.rv-star-picker label {
+    font-size: 1.6rem; color: var(--color-border); cursor: pointer;
+    transition: color .15s; line-height: 1;
+}
+.rv-star-picker input:checked ~ label,
+.rv-star-picker label:hover,
+.rv-star-picker label:hover ~ label { color: #f59e0b; }
+</style>
+{% endblock %}
+
+{% block content %}
+{% set is_single   = block.type in ['mini_house','full_house'] %}
+{% set type_labels = {
+    'boarding_house': 'Nhà trọ',
+    'dormitory':      'KTX',
+    'homestay':       'Homestay',
+    'mini_house':     'Căn hộ Mini',
+    'full_house':     'Nhà nguyên căn'
+} %}
+
+{% if admin_preview is defined and admin_preview %}
+{# ── Admin Preview Bar ── #}
+<div style="position:sticky;top:0;z-index:1050;background:#1e293b;color:#fff;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;box-shadow:0 2px 8px rgba(0,0,0,.3);">
+    <div style="display:flex;align-items:center;gap:12px;">
+        <span style="background:#f97316;color:#fff;font-size:.7rem;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:.05em;">XEM TRƯỚC</span>
+        <span style="font-weight:700;font-size:.95rem;">{{ block.name }}</span>
+        {% if block.status == 'pending' %}
+            <span style="background:#fbbf24;color:#1e293b;font-size:.72rem;font-weight:700;padding:2px 9px;border-radius:20px;">Chờ duyệt</span>
+        {% elseif block.status == 'approved' %}
+            <span style="background:#22c55e;color:#fff;font-size:.72rem;font-weight:700;padding:2px 9px;border-radius:20px;">Đã duyệt</span>
+        {% else %}
+            <span style="background:#ef4444;color:#fff;font-size:.72rem;font-weight:700;padding:2px 9px;border-radius:20px;">Từ chối</span>
+        {% endif %}
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        {% if block.status == 'pending' %}
+        <form action="{{ route('/admin/properties/' ~ block.id ~ '/approve') }}" method="POST" style="margin:0;">
+            <input type="hidden" name="csrf_token" value="{{ csrf }}">
+            <button class="btn btn-sm btn-success"><i class="bi bi-check-lg me-1"></i>Duyệt</button>
+        </form>
+        <button class="btn btn-sm btn-danger" onclick="document.getElementById('adminRejectBar').style.display='flex'">
+            <i class="bi bi-x-lg me-1"></i>Từ chối
+        </button>
+        {% elseif block.status == 'approved' %}
+        <form action="{{ route('/admin/properties/' ~ block.id ~ '/reject') }}" method="POST" style="margin:0;">
+            <input type="hidden" name="csrf_token" value="{{ csrf }}">
+            <input type="hidden" name="reason" value="Thu hồi phê duyệt">
+            <button class="btn btn-sm btn-outline-warning">Thu hồi phê duyệt</button>
+        </form>
+        {% elseif block.status == 'rejected' %}
+        <form action="{{ route('/admin/properties/' ~ block.id ~ '/approve') }}" method="POST" style="margin:0;">
+            <input type="hidden" name="csrf_token" value="{{ csrf }}">
+            <button class="btn btn-sm btn-outline-success">Duyệt lại</button>
+        </form>
+        {% endif %}
+        <a href="{{ route('/admin/properties') }}" class="btn btn-sm btn-outline-light">← Quay lại</a>
+    </div>
+</div>
+{# Reject reason bar #}
+<div id="adminRejectBar" style="display:none;background:#450a0a;padding:10px 20px;align-items:center;gap:10px;flex-wrap:wrap;">
+    <form action="{{ route('/admin/properties/' ~ block.id ~ '/reject') }}" method="POST" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0;width:100%;">
+        <input type="hidden" name="csrf_token" value="{{ csrf }}">
+        <input type="text" name="reason" class="form-control form-control-sm" style="max-width:360px;" placeholder="Lý do từ chối..." required>
+        <button class="btn btn-sm btn-danger">Xác nhận từ chối</button>
+        <button type="button" class="btn btn-sm btn-outline-light" onclick="document.getElementById('adminRejectBar').style.display='none'">Huỷ</button>
+    </form>
+</div>
+{% endif %}
+
+{# Breadcrumb #}
+<div class="bg-white border-bottom py-2" style="background:linear-gradient(90deg,#fff7ed 0%,#fff 60%)!important;">
+    <div class="container">
+        <ol class="breadcrumb mb-0" style="font-size:.8rem;">
+            <li class="breadcrumb-item"><a href="{{ route('/') }}" class="text-decoration-none">Trang chủ</a></li>
+            <li class="breadcrumb-item"><a href="{{ route('/properties') }}" class="text-decoration-none">Bất động sản</a></li>
+            <li class="breadcrumb-item active text-truncate" style="max-width:220px;">{{ block.name }}</li>
+        </ol>
+    </div>
+</div>
+
+{% if is_single %}
+{# LAYOUT A - Single-unit (mini_house / full_house) #}
+<div class="container py-4">
+<div class="row g-4">
+
+{# Left Column: Gallery + Description + Utilities #}
+<div class="col-lg-7">
+
+    {# Gallery #}
+    {% set imgs = blockImages is not empty ? blockImages : [] %}
+    {% if imgs is not empty %}
+        <div class="pd-gallery-main">
+            <img id="pdMainImg" src="{{ upload_url ~ imgs|first.image_path }}" alt="{{ block.name }}">
+            {% if imgs|length > 1 %}
+                <span class="pd-gallery-counter" id="pdCounter">1 / {{ imgs|length }}</span>
+            {% endif %}
+        </div>
+        {% if imgs|length > 1 %}
+        <div class="pd-thumb-strip" id="pdThumbStrip">
+            {% for img in imgs %}
+            <img src="{{ upload_url ~ img.image_path }}"
+                 class="pd-thumb {{ loop.first ? 'active' : '' }}"
+                 data-index="{{ loop.index }}"
+                 data-total="{{ imgs|length }}"
+                 onclick="pdSetMain(this)"
+                 alt="">
+            {% endfor %}
+        </div>
+        {% endif %}
+    {% else %}
+        <div class="pd-gallery-no-img">
+            <i class="bi bi-image-fill" style="font-size:4rem;opacity:.2;"></i>
+            <span style="font-size:.9rem;">Chưa có ảnh</span>
+        </div>
+    {% endif %}
+
+    {# Description #}
+    {% if block.description %}
+    <div class="pd-section">
+        <div class="pd-section-label"><i class="bi bi-file-text-fill text-primary"></i>Mô tả chi tiết</div>
+        <div class="pd-description">{{ block.description }}</div>
+    </div>
+    {% endif %}
+
+    {# Utility Costs #}
+    {% if block.electric_price or block.water_price or block.internet_price %}
+    <div class="pd-section">
+        <div class="pd-section-label"><i class="bi bi-lightning-charge-fill text-warning"></i>Chi phí phát sinh</div>
+        <div class="pd-utility-table">
+            {% if block.electric_price %}
+            <div class="pd-utility-row">
+                <span class="pd-utility-label"><i class="bi bi-lightning-charge-fill text-warning fs-5"></i>Tiền điện</span>
+                <span class="pd-utility-value">{{ block.electric_price|money }}<span class="text-muted fw-400 small">/kWh</span></span>
+            </div>
+            {% endif %}
+            {% if block.water_price %}
+            <div class="pd-utility-row">
+                <span class="pd-utility-label"><i class="bi bi-droplet-fill text-info fs-5"></i>Tiền nước</span>
+                <span class="pd-utility-value">{{ block.water_price|money }}<span class="text-muted fw-400 small">/m³</span></span>
+            </div>
+            {% endif %}
+            {% if block.internet_price %}
+            <div class="pd-utility-row">
+                <span class="pd-utility-label"><i class="bi bi-router-fill text-primary fs-5"></i>Internet</span>
+                <span class="pd-utility-value">{{ block.internet_price|money }}<span class="text-muted fw-400 small">/tháng</span></span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {# ── Map display (Layout A) ─────────────────────────────────────── #}
+    {% if block.latitude and block.longitude %}
+    <div class="pd-section" id="propertyMapSection">
+        <div class="pd-section-label"><i class="bi bi-geo-alt-fill text-primary"></i>Vị trí bất động sản</div>
+        <iframe
+            src="https://www.openstreetmap.org/export/embed.html?bbox={{ (block.longitude - 0.008) }},{{ (block.latitude - 0.006) }},{{ (block.longitude + 0.008) }},{{ (block.latitude + 0.006) }}&layer=mapnik&marker={{ block.latitude }},{{ block.longitude }}"
+            class="pd-map-canvas"
+            style="border:none; display:block;"
+            loading="lazy"
+            title="Bản đồ vị trí bất động sản"
+            referrerpolicy="no-referrer-when-downgrade"
+            allowfullscreen>
+        </iframe>
+        <div class="d-flex align-items-center justify-content-between mt-2 flex-wrap gap-2">
+            <small class="text-muted">
+                <i class="bi bi-geo-alt me-1"></i>
+                {{ block.map_address ?? block.address }}
+            </small>
+            <a href="https://www.google.com/maps?q={{ block.latitude }},{{ block.longitude }}"
+               class="pd-map-open-btn" target="_blank" rel="noopener">
+                <i class="bi bi-box-arrow-up-right"></i>Mở trong Google Maps
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ── Reviews Section (Layout A) ────────────────────────────── #}
+    <div class="pd-section" id="lien-he-a">
+        <div class="pd-section-label"><i class="bi bi-star-fill text-warning"></i>Đánh giá của khách thuê</div>
+
+        {# Rating summary #}
+        <div class="rv-summary-box">
+            <div class="text-center">
+                <div class="rv-big-score">{{ reviewAvg > 0 ? reviewAvg : '—' }}</div>
+                <div class="rv-stars-display">
+                    {% for i in 1..5 %}
+                        <i class="bi bi-star{{ reviewAvg >= i ? '-fill' : (reviewAvg >= i - 0.5 ? '-half' : '') }}"
+                           style="color:{{ reviewAvg >= i - 0.5 ? '#f59e0b' : '#e5e7eb' }};"></i>
+                    {% endfor %}
+                </div>
+                <div class="rv-big-label">{{ reviewCount }} đánh giá</div>
+            </div>
+            <div class="rv-bars">
+                {% for star in 5..1 %}
+                {% set cnt = ratingSummary[star] ?? 0 %}
+                {% set pct = reviewCount > 0 ? (cnt / reviewCount * 100)|round : 0 %}
+                <div class="rv-bar-row">
+                    <span style="width:12px;text-align:right;color:var(--color-text-muted);">{{ star }}</span>
+                    <i class="bi bi-star-fill" style="color:#f59e0b;font-size:.7rem;"></i>
+                    <div class="rv-bar-track"><div class="rv-bar-fill" style="width:{{ pct }}%;"></div></div>
+                    <span style="width:22px;color:var(--color-text-muted);">{{ cnt }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        {# Review list #}
+        {% if blockReviews is not empty %}
+            {% for rv in blockReviews %}
+            <div class="rv-item">
+                <div class="rv-avatar">
+                    {% if rv.avatar %}
+                        <img src="{{ rv.avatar }}" alt="{{ rv.user_name }}" style="width:100%;height:100%;object-fit:cover;">
+                    {% else %}
+                        {{ rv.user_name|first|upper }}
+                    {% endif %}
+                </div>
+                <div class="flex-grow-1">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="rv-name">{{ rv.user_name }}</span>
+                        <span class="rv-stars-display" style="font-size:.8rem;">
+                            {% for i in 1..5 %}<i class="bi bi-star{{ rv.rating >= i ? '-fill' : '' }}"
+                               style="color:{{ rv.rating >= i ? '#f59e0b' : '#e5e7eb' }};"></i>{% endfor %}
+                        </span>
+                    </div>
+                    <div class="rv-meta">{{ rv.created_at|date('d/m/Y') }}</div>
+                    {% if rv.comment %}<div class="rv-comment">{{ rv.comment }}</div>{% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-center py-4 text-muted">
+                <i class="bi bi-chat-square-text fs-2 d-block mb-2 opacity-25"></i>
+                <p class="mb-0 small">Chưa có đánh giá nào. Hãy là người đầu tiên!</p>
+            </div>
+        {% endif %}
+
+        {# Review form #}
+        {% if auth is defined and auth %}
+        <div class="rv-form-card">
+            <div class="fw-800 mb-3"><i class="bi bi-pencil-fill text-primary me-2"></i>Viết đánh giá của bạn</div>
+            <form method="POST" action="{{ route('/reviews') }}">
+                <input type="hidden" name="block_id" value="{{ block.id }}">
+                <input type="hidden" name="redirect_to" value="{{ route('/properties/' ~ block.id) }}">
+                <div class="mb-3">
+                    <label class="form-label fw-600 small">Chất lượng</label>
+                    <div class="rv-star-picker">
+                        {% for s in 5..1 %}
+                        <input type="radio" id="starA{{ s }}" name="rating" value="{{ s }}" {{ s == 5 ? 'checked' : '' }}>
+                        <label for="starA{{ s }}">★</label>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-600 small">Nhận xét</label>
+                    <textarea name="comment" class="form-control" rows="3"
+                              placeholder="Chia sẻ trải nghiệm của bạn về chỗ ở này..."
+                              style="border-radius:10px;font-size:.88rem;"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary fw-700" style="border-radius:10px;">
+                    <i class="bi bi-send-fill me-2"></i>Gửi đánh giá
+                </button>
+            </form>
+        </div>
+        {% else %}
+            <div class="text-center mt-3">
+                <a href="{{ route('/login') }}" class="btn btn-outline-primary btn-sm" style="border-radius:20px;">
+                    <i class="bi bi-person-fill me-1"></i>Đăng nhập để đánh giá
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+</div>{# /col-lg-7 #}
+
+{# Right Column: Sticky Price Panel #}
+<div class="col-lg-5">
+<div class="pd-price-panel">
+    <div class="pd-price-header">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <span class="badge" style="background:rgba(255,255,255,.2);color:#fff;font-size:.7rem;border:1px solid rgba(255,255,255,.35);">
+                {{ type_labels[block.type] ?? block.type }}
+            </span>
+            {% if block.status == 'approved' %}
+            <span class="badge" style="background:rgba(16,185,129,.25);color:#d1fae5;font-size:.7rem;border:1px solid rgba(16,185,129,.35);">
+                <i class="bi bi-patch-check-fill me-1"></i>Uy tín
+            </span>
+            {% endif %}
+        </div>
+        <div class="pd-title-text">{{ block.name }}</div>
+        <div style="font-size:.82rem;opacity:.8;"><i class="bi bi-geo-alt-fill me-1"></i>{{ block.district_name ?? block.address }}</div>
+    </div>
+    <div class="pd-price-body">
+        {# Price #}
+        <div class="mb-3 pb-3 border-bottom">
+            {% if block.price %}
+            <div class="pd-price-amount text-primary">{{ block.price|money }}</div>
+            <div class="text-muted small">mỗi tháng</div>
+            {% else %}
+            <div class="fw-700 text-muted fs-5">Liên hệ để biết giá</div>
+            {% endif %}
+            {% if block.deposit_months %}
+            <div class="mt-1 small text-muted"><i class="bi bi-shield-check text-success me-1"></i>Đặt cọc {{ block.deposit_months }} tháng</div>
+            {% endif %}
+        </div>
+
+        {# Stat chips #}
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            {% if block.area %}<div class="pd-stat-chip"><i class="bi bi-aspect-ratio"></i>{{ block.area }} m²</div>{% endif %}
+            {% if block.max_people %}<div class="pd-stat-chip"><i class="bi bi-people"></i>Tối đa {{ block.max_people }} người</div>{% endif %}
+            {% if block.floor %}<div class="pd-stat-chip"><i class="bi bi-building"></i>Tầng {{ block.floor }}</div>{% endif %}
+            {% if block.num_bedrooms %}<div class="pd-stat-chip"><i class="bi bi-door-closed"></i>{{ block.num_bedrooms }} phòng ngủ</div>{% endif %}
+            {% if block.num_bathrooms %}<div class="pd-stat-chip"><i class="bi bi-droplet"></i>{{ block.num_bathrooms }} WC</div>{% endif %}
+        </div>
+
+        {# Amenities #}
+        {% if block.has_wifi or block.has_ac or block.has_parking or block.allow_pet or block.allow_cooking %}
+        <div class="mb-3">
+            <div class="pd-section-label">Tiện ích</div>
+            <div class="d-flex flex-wrap gap-2">
+                {% if block.has_wifi %}<span class="pd-amenity-chip"><i class="bi bi-wifi"></i>WiFi miễn phí</span>{% endif %}
+                {% if block.has_ac %}<span class="pd-amenity-chip"><i class="bi bi-snow2 text-info"></i>Máy lạnh</span>{% endif %}
+                {% if block.has_parking %}<span class="pd-amenity-chip neutral"><i class="bi bi-car-front text-secondary"></i>Gửi xe</span>{% endif %}
+                {% if block.allow_pet %}<span class="pd-amenity-chip neutral"><i class="bi bi-heart-fill text-danger"></i>Nuôi thú cưng</span>{% endif %}
+                {% if block.allow_cooking %}<span class="pd-amenity-chip neutral"><i class="bi bi-fire text-warning"></i>Nấu ăn</span>{% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {# Address box #}
+        <div class="pd-address-box mb-3">
+            <div class="fw-700 small mb-1"><i class="bi bi-geo-alt-fill text-primary me-1"></i>Địa chỉ</div>
+            <div class="text-muted small">{{ block.address }}</div>
+            {% if block.ward_name or block.district_name %}
+            <div class="text-muted small mt-1">
+                {% if block.ward_name %}{{ block.ward_name }}{% endif %}
+                {% if block.district_name %}, {{ block.district_name }}{% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        {# CTA #}
+        <div class="d-grid gap-2">
+            <a href="tel:{{ block.contact_phone ?? '' }}"
+               class="btn btn-primary btn-lg fw-800" style="border-radius:12px;font-size:1rem;">
+                <i class="bi bi-telephone-fill me-2"></i>Liên hệ ngay
+                {% if block.contact_phone %}<span class="ms-1 opacity-75" style="font-size:.8rem;">({{ block.contact_phone }})</span>{% endif %}
+            </a>
+            {% if session.user_id and block.user_id != session.user_id %}
+            <button type="button" onclick="openChatWith({{ block.user_id }})"
+               class="btn btn-outline-primary fw-700" style="border-radius:12px;">
+                <i class="bi bi-chat-dots-fill me-2"></i>Nhắn tin chủ trọ
+            </button>
+            {% endif %}
+            <a href="{{ route('/properties') }}?type={{ block.type }}"
+               class="btn btn-outline-secondary fw-600" style="border-radius:12px;">
+                <i class="bi bi-grid-3x2-gap me-1"></i>Xem {{ type_labels[block.type] ?? 'BĐS' }} tương tự
+            </a>
+        </div>
+    </div>
+</div>
+</div>{# /col-lg-5 #}
+
+</div>{# /row #}
+
+{# Similar properties #}
+{% if similar is not empty %}
+<div class="pd-section">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-800 mb-0" style="padding-left:14px;border-left:4px solid var(--color-primary);">
+            {{ type_labels[block.type] ?? 'BĐS' }} tương tự
+        </h5>
+        <a href="{{ route('/properties') }}?type={{ block.type }}" class="btn btn-sm btn-outline-primary" style="border-radius:20px;">
+            Xem tất cả <i class="bi bi-arrow-right ms-1"></i>
+        </a>
+    </div>
+    <div class="row g-3">
+        {% for s in similar %}
+        <div class="col-6 col-md-3">
+            <a href="{{ route('/properties/' ~ s.id) }}" class="pd-sim-card">
+                {% if s.primary_image %}
+                    <img src="{{ upload_url ~ s.primary_image }}" alt="{{ s.name }}" class="pd-sim-img">
+                {% else %}
+                    <div class="pd-sim-no-img"><i class="bi bi-building" style="font-size:2.5rem;opacity:.2;"></i></div>
+                {% endif %}
+                <div class="p-3">
+                    <div class="fw-700 small lh-sm text-truncate mb-1">{{ s.name }}</div>
+                    <div class="text-muted" style="font-size:.75rem;"><i class="bi bi-geo-alt me-1"></i>{{ s.district_name ?? '' }}</div>
+                    {% if s.price %}
+                    <div class="fw-900 text-primary mt-1" style="font-size:.9rem;">{{ s.price|money }}<span class="fw-400 text-muted" style="font-size:.73rem;">/tháng</span></div>
+                    {% elseif s.min_display_price %}
+                    <div class="fw-900 text-primary mt-1" style="font-size:.9rem;">{{ s.min_display_price|money }}<span class="fw-400 text-muted" style="font-size:.73rem;">/tháng</span></div>
+                    {% endif %}
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+</div>{# /container Layout A #}
+
+{# Mobile sticky CTA #}
+<div class="pd-mobile-cta">
+    <div class="flex-shrink-0">
+        {% if block.price %}
+        <div class="fw-900 text-primary lh-1" style="font-size:1.15rem;">{{ block.price|money }}</div>
+        <div class="text-muted" style="font-size:.72rem;">/ tháng</div>
+        {% else %}
+        <div class="fw-700 text-muted small">Liên hệ</div>
+        {% endif %}
+    </div>
+    <a href="tel:{{ block.contact_phone ?? '' }}"
+       class="btn btn-primary fw-800 flex-grow-1" style="border-radius:12px;">
+        <i class="bi bi-telephone-fill me-2"></i>Liên hệ ngay
+    </a>
+    {% if session.user_id and block.user_id != session.user_id %}
+    <button type="button" onclick="openChatWith({{ block.user_id }})"
+       class="btn btn-outline-primary fw-800" style="border-radius:12px;">
+        <i class="bi bi-chat-dots-fill"></i>
+    </button>
+    {% endif %}
+</div>
+
+{% else %}
+{# LAYOUT B - Composite (boarding_house / dormitory / homestay) #}
+{% set available_count = rooms|filter(r => r.occupancy_status == 'available')|length %}
+<div class="container py-4">
+
+{# Block header card #}
+<div class="card border-0 shadow-sm mb-4" style="border-radius:16px;overflow:hidden;">
+    {% set headerImg = blockImages is not empty ? blockImages|first : null %}
+    {% if headerImg %}
+    <div class="room-header-banner">
+        <img src="{{ upload_url ~ headerImg.image_path }}" alt="{{ block.name }}">
+        <div class="room-header-overlay"></div>
+        <div class="room-header-text">
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <span class="badge" style="background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.3);font-size:.72rem;">{{ type_labels[block.type] ?? block.type }}</span>
+                {% if block.status == 'approved' %}<span class="badge bg-success" style="font-size:.7rem;"><i class="bi bi-patch-check-fill me-1"></i>Đã duyệt</span>{% endif %}
+            </div>
+            <h1 class="fw-900 text-white mb-1" style="font-size:1.5rem;text-shadow:0 2px 8px rgba(0,0,0,.4);">{{ block.name }}</h1>
+            <div class="text-white small" style="opacity:.85;"><i class="bi bi-geo-alt-fill me-1"></i>{{ block.address }}</div>
+        </div>
+    </div>
+    {% else %}
+    <div class="card-body p-4">
+        <span class="badge bg-secondary mb-2">{{ type_labels[block.type] ?? block.type }}</span>
+        <h1 class="fw-900 mb-1" style="font-size:1.5rem;">{{ block.name }}</h1>
+        <div class="text-muted small"><i class="bi bi-geo-alt-fill text-primary me-1"></i>{{ block.address }}</div>
+    </div>
+    {% endif %}
+    {# Stats bar #}
+    <div class="room-stats-bar">
+        <div class="room-stat-box">
+            <div class="room-stat-num text-primary" style="font-size:1.1rem;">
+                {% if block.min_display_price %}{{ block.min_display_price|money }}{% if block.max_display_price and block.max_display_price != block.min_display_price %}<span class="text-muted fw-400" style="font-size:.75rem;"> – {{ block.max_display_price|money }}</span>{% endif %}{% else %}<span class="fs-6">Liên hệ</span>{% endif %}
+            </div>
+            <div class="text-muted small">Giá thuê / tháng</div>
+        </div>
+        <div class="room-stat-box">
+            <div class="room-stat-num">{{ block.room_count|default(0) }}</div>
+            <div class="text-muted small">Tổng phòng</div>
+        </div>
+        <div class="room-stat-box">
+            <div class="room-stat-num text-success">{{ available_count }}</div>
+            <div class="text-muted small">Còn trống</div>
+        </div>
+        {% if block.electric_price %}
+        <div class="room-stat-box d-none d-md-block">
+            <div class="room-stat-num" style="font-size:1rem;">{{ block.electric_price|money }}</div>
+            <div class="text-muted small"><i class="bi bi-lightning-charge-fill text-warning me-1"></i>Giá điện/kWh</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-4">
+
+{# Main content #}
+<div class="col-lg-8">
+
+    {# Room picker #}
+    {% if rooms is not empty %}
+    <div class="card border-0 shadow-sm mb-4" style="border-radius:14px;">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <h5 class="fw-800 mb-0">Chọn phòng để xem chi tiết</h5>
+                <div class="d-flex gap-3 small">
+                    <span class="d-flex align-items-center gap-1 text-muted">
+                        <span style="width:12px;height:12px;border-radius:3px;background:var(--color-primary);display:inline-block;"></span>Còn trống
+                    </span>
+                    <span class="d-flex align-items-center gap-1 text-muted">
+                        <span style="width:12px;height:12px;border-radius:3px;background:#e0e0e0;display:inline-block;"></span>Đã thuê
+                    </span>
+                </div>
+            </div>
+            <div class="d-flex flex-wrap gap-2" id="propertyRoomVariants">
+                {% for room in rooms %}
+                {% set avail = room.occupancy_status == 'available' %}
+                <button type="button"
+                        class="room-slot-btn variant-room-btn {{ avail ? 'available' : 'rented' }}"
+                        data-room-number="{{ room.room_number }}"
+                        data-room-id="{{ room.id }}"
+                        data-room-name="{{ room.name }}"
+                        data-room-status="{{ room.occupancy_status }}"
+                        data-room-price="{{ room.price }}"
+                        data-room-area="{{ room.area }}"
+                        data-room-type="{{ room.room_type_name|default('') }}"
+                        {{ not avail ? 'disabled' : '' }}>
+                    P{{ room.room_number }}
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    {# Selected room detail panel #}
+    <div class="room-detail-panel mb-4" id="selectedRoomPanel">
+        <div class="row g-0">
+            <div class="col-md-5">
+                <div class="room-detail-img" id="galleryMain">
+                    {% if selectedRoomImages is not empty %}
+                        <img id="mainPropertyImage" src="{{ selectedRoomImages[0].image_path }}" alt="">
+                    {% else %}
+                        <div class="d-flex align-items-center justify-content-center h-100 text-muted">
+                            <i class="bi bi-image-fill" style="font-size:3rem;opacity:.2;"></i>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="d-flex gap-2 p-3 flex-wrap" id="galleryThumbs">
+                    {% for img in selectedRoomImages %}
+                    <img src="{{ img.image_path }}" class="pd-thumb {{ loop.first ? 'active' : '' }}"
+                         style="width:62px;height:48px;" data-src="{{ img.image_path }}">
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="col-md-7 p-4">
+                <div class="d-flex justify-content-between align-items-start mb-3 gap-2">
+                    <h5 class="fw-800 mb-0" id="selectedRoomName">{{ selectedRoom.name }}</h5>
+                    <span class="badge bg-{{ selectedRoom.occupancy_status == 'available' ? 'success' : 'secondary' }} flex-shrink-0" id="selectedRoomStatus">
+                        {{ selectedRoom.occupancy_status == 'available' ? 'Còn trống' : 'Đã thuê' }}
+                    </span>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-6">
+                        <div class="text-muted small mb-1">Giá thuê</div>
+                        <div class="fw-900 text-primary" style="font-size:1.25rem;" id="selectedRoomPrice">
+                            {{ selectedRoom.price ? selectedRoom.price|money ~ '/tháng' : '—' }}
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-muted small mb-1">Diện tích</div>
+                        <div class="fw-700 fs-6" id="selectedRoomArea">{{ selectedRoom.area ? selectedRoom.area ~ ' m²' : '—' }}</div>
+                    </div>
+                </div>
+                {% if selectedRoom.id %}
+                <a href="{{ route('/rooms/' ~ selectedRoom.id) }}"
+                   class="btn btn-primary fw-700" id="selectedRoomDetailBtn" style="border-radius:10px;">
+                    <i class="bi bi-eye me-2"></i>Xem chi tiết phòng này
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# All rooms grid #}
+    <h5 class="fw-800 mb-3" style="padding-left:14px;border-left:4px solid var(--color-primary);">
+        Tất cả phòng ({{ rooms|length }})
+    </h5>
+    <div class="row g-3 mb-4">
+        {% for room in rooms %}
+        {% set avail = room.occupancy_status == 'available' %}
+        <div class="col-sm-6 col-lg-4">
+            <div class="room-card-grid {{ not avail ? 'unavail' : '' }}">
+                <div class="p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-800">Phòng {{ room.room_number }}</span>
+                        <span class="badge" style="font-size:.7rem;background:{{ avail ? '#ecfdf5' : '#f5f5f5' }};color:{{ avail ? '#065f46' : '#888' }};border:1px solid {{ avail ? '#6ee7b7' : '#ddd' }};">
+                            {{ avail ? 'Còn trống' : 'Đã thuê' }}
+                        </span>
+                    </div>
+                    <div class="text-muted small mb-2">{{ room.room_type_name|default('Phòng trọ') }}</div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        {% if room.area %}<span class="small text-muted"><i class="bi bi-aspect-ratio me-1"></i>{{ room.area }} m²</span>{% endif %}
+                        {% if room.price %}<span class="fw-900 text-primary small">{{ room.price|money }}/tháng</span>{% endif %}
+                    </div>
+                    {% if room.id and avail %}
+                    <a href="{{ route('/rooms/' ~ room.id) }}" class="btn btn-sm btn-outline-primary w-100 mt-3" style="border-radius:8px;">
+                        Xem phòng <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {# Description #}
+    {% if block.description %}
+    <div class="pd-section">
+        <div class="pd-section-label"><i class="bi bi-file-text-fill text-primary"></i>Mô tả</div>
+        <div class="pd-description">{{ block.description }}</div>
+    </div>
+    {% endif %}
+
+    {# ── Map display (Layout B) ─────────────────────────────────────── #}
+    {% if block.latitude and block.longitude %}
+    <div class="pd-section" id="propertyMapSection">
+        <div class="pd-section-label"><i class="bi bi-geo-alt-fill text-primary"></i>Vị trí bất động sản</div>
+        <iframe
+            src="https://www.openstreetmap.org/export/embed.html?bbox={{ (block.longitude - 0.008) }},{{ (block.latitude - 0.006) }},{{ (block.longitude + 0.008) }},{{ (block.latitude + 0.006) }}&layer=mapnik&marker={{ block.latitude }},{{ block.longitude }}"
+            class="pd-map-canvas"
+            style="border:none; display:block;"
+            loading="lazy"
+            title="Bản đồ vị trí bất động sản"
+            referrerpolicy="no-referrer-when-downgrade"
+            allowfullscreen>
+        </iframe>
+        <div class="d-flex align-items-center justify-content-between mt-2 flex-wrap gap-2">
+            <small class="text-muted">
+                <i class="bi bi-geo-alt me-1"></i>
+                {{ block.map_address ?? block.address }}
+            </small>
+            <a href="https://www.google.com/maps?q={{ block.latitude }},{{ block.longitude }}"
+               class="pd-map-open-btn" target="_blank" rel="noopener">
+                <i class="bi bi-box-arrow-up-right"></i>Mở trong Google Maps
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ── Reviews Section ──────────────────────────────────────────── #}
+    <div class="pd-section" id="lien-he">
+        <div class="pd-section-label"><i class="bi bi-star-fill text-warning"></i>Đánh giá của khách thuê</div>
+
+        {# Rating summary #}
+        <div class="rv-summary-box">
+            <div class="text-center">
+                <div class="rv-big-score">{{ reviewAvg > 0 ? reviewAvg : '—' }}</div>
+                <div class="rv-stars-display">
+                    {% for i in 1..5 %}
+                        <i class="bi bi-star{{ reviewAvg >= i ? '-fill' : (reviewAvg >= i - 0.5 ? '-half' : '') }}" style="color:{{ reviewAvg >= i - 0.5 ? '#f59e0b' : '#e5e7eb' }};"></i>
+                    {% endfor %}
+                </div>
+                <div class="rv-big-label">{{ reviewCount }} đánh giá</div>
+            </div>
+            <div class="rv-bars">
+                {% for star in 5..1 %}
+                {% set cnt = ratingSummary[star] ?? 0 %}
+                {% set pct = reviewCount > 0 ? (cnt / reviewCount * 100)|round : 0 %}
+                <div class="rv-bar-row">
+                    <span style="width:12px;text-align:right;color:var(--color-text-muted);">{{ star }}</span>
+                    <i class="bi bi-star-fill" style="color:#f59e0b;font-size:.7rem;"></i>
+                    <div class="rv-bar-track"><div class="rv-bar-fill" style="width:{{ pct }}%;"></div></div>
+                    <span style="width:22px;color:var(--color-text-muted);">{{ cnt }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        {# Review list #}
+        {% if blockReviews is not empty %}
+            {% for rv in blockReviews %}
+            <div class="rv-item">
+                <div class="rv-avatar">
+                    {% if rv.avatar %}
+                        <img src="{{ rv.avatar }}" alt="{{ rv.user_name }}" style="width:100%;height:100%;object-fit:cover;">
+                    {% else %}
+                        {{ rv.user_name|first|upper }}
+                    {% endif %}
+                </div>
+                <div class="flex-grow-1">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="rv-name">{{ rv.user_name }}</span>
+                        <span class="rv-stars-display" style="font-size:.8rem;">
+                            {% for i in 1..5 %}<i class="bi bi-star{{ rv.rating >= i ? '-fill' : '' }}" style="color:{{ rv.rating >= i ? '#f59e0b' : '#e5e7eb' }};"></i>{% endfor %}
+                        </span>
+                        {% if rv.room_number %}<span class="badge" style="background:#f0f9ff;color:#0369a1;font-size:.65rem;border:1px solid #bae6fd;">Phòng {{ rv.room_number }}</span>{% endif %}
+                    </div>
+                    <div class="rv-meta">{{ rv.created_at|date('d/m/Y') }}</div>
+                    {% if rv.comment %}<div class="rv-comment">{{ rv.comment }}</div>{% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-center py-4 text-muted">
+                <i class="bi bi-chat-square-text fs-2 d-block mb-2 opacity-25"></i>
+                <p class="mb-0 small">Chưa có đánh giá nào. Hãy là người đầu tiên!</p>
+            </div>
+        {% endif %}
+
+        {# Review form (logged-in users only) #}
+        {% if auth is defined and auth %}
+            {% set reviewRoomId = selectedRoom.id ?? (rooms[0].id ?? null) %}
+            <div class="rv-form-card">
+                <div class="fw-800 mb-3"><i class="bi bi-pencil-fill text-primary me-2"></i>Viết đánh giá của bạn</div>
+                <form method="POST" action="{{ route('/reviews') }}">
+                    {% if reviewRoomId %}
+                    <input type="hidden" name="room_id" value="{{ reviewRoomId }}">
+                    {% else %}
+                    <input type="hidden" name="block_id" value="{{ block.id }}">
+                    {% endif %}
+                    <input type="hidden" name="redirect_to" value="{{ route('/properties/' ~ block.id) }}">
+                    <div class="mb-3">
+                        <label class="form-label fw-600 small">Chất lượng</label>
+                        <div class="rv-star-picker">
+                            {% for s in 5..1 %}
+                            <input type="radio" id="star{{ s }}" name="rating" value="{{ s }}" {{ s == 5 ? 'checked' : '' }}>
+                            <label for="star{{ s }}">★</label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-600 small">Nhận xét</label>
+                        <textarea name="comment" class="form-control" rows="3"
+                                  placeholder="Chia sẻ trải nghiệm của bạn về chỗ ở này..."
+                                  style="border-radius:10px;font-size:.88rem;"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary fw-700" style="border-radius:10px;">
+                        <i class="bi bi-send-fill me-2"></i>Gửi đánh giá
+                    </button>
+                </form>
+            </div>
+        {% else %}
+            <div class="text-center mt-3">
+                <a href="{{ route('/login') }}" class="btn btn-outline-primary btn-sm" style="border-radius:20px;">
+                    <i class="bi bi-person-fill me-1"></i>Đăng nhập để đánh giá
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+</div>{# /col-lg-8 #}
+
+{# Sidebar #}
+<div class="col-lg-4">
+<div class="pd-price-panel">
+    <div class="pd-price-header" style="padding:18px 20px;">
+        <div class="text-white opacity-70 small">Khoảng giá</div>
+        <div class="pd-price-amount text-white mt-1" style="font-size:1.45rem;">
+            {% if block.min_display_price %}
+                {{ block.min_display_price|money }}
+                {% if block.max_display_price and block.max_display_price != block.min_display_price %}
+                <span style="font-size:.9rem;opacity:.75;"> – {{ block.max_display_price|money }}</span>
+                {% endif %}
+            {% else %}<span style="font-size:1.1rem;">Liên hệ</span>{% endif %}
+        </div>
+        <div class="text-white opacity-60 small">mỗi tháng</div>
+    </div>
+    <div class="pd-price-body">
+        {% if block.has_wifi or block.has_ac or block.has_parking or block.allow_pet or block.allow_cooking %}
+        <div class="mb-3">
+            <div class="pd-section-label">Tiện ích chung</div>
+            <div class="d-flex flex-wrap gap-2">
+                {% if block.has_wifi %}<span class="pd-amenity-chip"><i class="bi bi-wifi"></i>WiFi</span>{% endif %}
+                {% if block.has_ac %}<span class="pd-amenity-chip"><i class="bi bi-snow2 text-info"></i>Máy lạnh</span>{% endif %}
+                {% if block.has_parking %}<span class="pd-amenity-chip neutral"><i class="bi bi-car-front"></i>Gửi xe</span>{% endif %}
+                {% if block.allow_pet %}<span class="pd-amenity-chip neutral"><i class="bi bi-heart-fill text-danger"></i>Nuôi thú</span>{% endif %}
+                {% if block.allow_cooking %}<span class="pd-amenity-chip neutral"><i class="bi bi-fire text-warning"></i>Nấu ăn</span>{% endif %}
+            </div>
+        </div>
+        {% endif %}
+        {% if block.electric_price or block.water_price or block.internet_price %}
+        <div class="mb-3">
+            <div class="pd-section-label">Chi phí phát sinh</div>
+            <div class="pd-utility-table">
+                {% if block.electric_price %}<div class="pd-utility-row"><span class="pd-utility-label"><i class="bi bi-lightning-charge-fill text-warning"></i>Điện</span><span class="pd-utility-value">{{ block.electric_price|money }}/kWh</span></div>{% endif %}
+                {% if block.water_price %}<div class="pd-utility-row"><span class="pd-utility-label"><i class="bi bi-droplet-fill text-info"></i>Nước</span><span class="pd-utility-value">{{ block.water_price|money }}/m³</span></div>{% endif %}
+                {% if block.internet_price %}<div class="pd-utility-row"><span class="pd-utility-label"><i class="bi bi-router-fill text-primary"></i>Internet</span><span class="pd-utility-value">{{ block.internet_price|money }}/tháng</span></div>{% endif %}
+            </div>
+        </div>
+        {% endif %}
+        <div class="pd-address-box mb-3">
+            <div class="fw-700 small mb-1"><i class="bi bi-geo-alt-fill text-primary me-1"></i>Địa chỉ</div>
+            <div class="text-muted small">{{ block.address }}</div>
+        </div>
+        <div class="d-grid gap-2">
+            <a href="tel:{{ block.contact_phone ?? '' }}" class="btn btn-primary fw-800" style="border-radius:12px;">
+                <i class="bi bi-telephone-fill me-2"></i>Liên hệ ngay
+            </a>
+            {% if session.user_id and block.user_id != session.user_id %}
+            <button type="button" onclick="openChatWith({{ block.user_id }})" class="btn btn-outline-primary fw-700" style="border-radius:12px;">
+                <i class="bi bi-chat-dots-fill me-2"></i>Nhắn tin chủ trọ
+            </button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+</div>{# /col-lg-4 #}
+
+</div>{# /row #}
+
+{# Similar #}
+{% if similar is not empty %}
+<div class="pd-section">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-800 mb-0" style="padding-left:14px;border-left:4px solid var(--color-primary);">{{ type_labels[block.type] ?? 'BĐS' }} tương tự</h5>
+        <a href="{{ route('/properties') }}?type={{ block.type }}" class="btn btn-sm btn-outline-primary" style="border-radius:20px;">
+            Xem tất cả <i class="bi bi-arrow-right ms-1"></i>
+        </a>
+    </div>
+    <div class="row g-3">
+        {% for s in similar %}
+        <div class="col-6 col-md-3">
+            <a href="{{ route('/properties/' ~ s.id) }}" class="pd-sim-card">
+                {% if s.primary_image %}<img src="{{ upload_url ~ s.primary_image }}" alt="{{ s.name }}" class="pd-sim-img">
+                {% else %}<div class="pd-sim-no-img"><i class="bi bi-building" style="font-size:2.5rem;opacity:.2;"></i></div>{% endif %}
+                <div class="p-3">
+                    <div class="fw-700 small lh-sm text-truncate mb-1">{{ s.name }}</div>
+                    <div class="text-muted" style="font-size:.75rem;"><i class="bi bi-geo-alt me-1"></i>{{ s.district_name ?? '' }}</div>
+                    {% if s.min_display_price %}
+                    <div class="fw-900 text-primary mt-1" style="font-size:.9rem;">{{ s.min_display_price|money }}<span class="fw-400 text-muted" style="font-size:.73rem;">/tháng</span></div>
+                    {% endif %}
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+</div>{# /container Layout B #}
+
+{# Mobile sticky CTA (composite) #}
+<div class="pd-mobile-cta">
+    <div class="flex-shrink-0">
+        {% if block.min_display_price %}
+        <div class="fw-900 text-primary lh-1" style="font-size:1.05rem;">{{ block.min_display_price|money }}</div>
+        {% else %}
+        <div class="fw-700 text-muted small">Liên hệ</div>
+        {% endif %}
+        <div class="text-muted" style="font-size:.7rem;">{{ available_count }} phòng trống</div>
+    </div>
+    <a href="tel:{{ block.contact_phone ?? '' }}" class="btn btn-primary fw-800 flex-grow-1" style="border-radius:12px;">
+        <i class="bi bi-telephone-fill me-2"></i>Liên hệ ngay
+    </a>
+    {% if session.user_id and block.user_id != session.user_id %}
+    <button type="button" onclick="openChatWith({{ block.user_id }})" class="btn btn-outline-primary fw-800" style="border-radius:12px;">
+        <i class="bi bi-chat-dots-fill"></i>
+    </button>
+    {% endif %}
+</div>
+
+{% endif %}
+
+<script>
+function pdSetMain(thumb) {
+    var el = document.getElementById('pdMainImg');
+    if (!el) return;
+    el.src = thumb.src;
+    var counter = document.getElementById('pdCounter');
+    if (counter) counter.textContent = thumb.dataset.index + ' / ' + thumb.dataset.total;
+    document.querySelectorAll('.pd-thumb').forEach(function(t) { t.classList.remove('active'); });
+    thumb.classList.add('active');
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    var propertyId   = {{ block.id }};
+    var roomVariants = document.querySelectorAll('.variant-room-btn');
+    if (!roomVariants.length) return;
+
+    var elName   = document.getElementById('selectedRoomName');
+    var elPrice  = document.getElementById('selectedRoomPrice');
+    var elArea   = document.getElementById('selectedRoomArea');
+    var elStatus = document.getElementById('selectedRoomStatus');
+    var elBtn    = document.getElementById('selectedRoomDetailBtn');
+    var mainImg  = document.getElementById('mainPropertyImage');
+    var thumbWrap= document.getElementById('galleryThumbs');
+
+    function fmtMoney(n) { return new Intl.NumberFormat('vi-VN').format(n) + 'đ'; }
+
+    function updatePanel(roomData, images) {
+        if (elName)   elName.textContent  = roomData.name || '';
+        if (elPrice)  elPrice.textContent = roomData.price ? fmtMoney(roomData.price) + '/tháng' : '—';
+        if (elArea)   elArea.textContent  = roomData.area  ? roomData.area + ' m²' : '—';
+        if (elStatus) {
+            var avail = roomData.status === 'available';
+            elStatus.textContent = avail ? 'Còn trống' : 'Đã thuê';
+            elStatus.className   = 'badge bg-' + (avail ? 'success' : 'secondary') + ' flex-shrink-0';
+        }
+        if (elBtn) {
+            if (roomData.id) { elBtn.href = '/rooms/' + roomData.id; elBtn.style.display = ''; }
+            else elBtn.style.display = 'none';
+        }
+        if (thumbWrap) {
+            thumbWrap.innerHTML = (images || []).map(function(img) {
+                return '<img src="' + img.image_path + '" class="pd-thumb" ' +
+                       'style="width:62px;height:48px;object-fit:cover;cursor:pointer;" data-src="' + img.image_path + '">';
+            }).join('');
+            thumbWrap.querySelectorAll('.pd-thumb').forEach(function(t) {
+                t.addEventListener('click', function () {
+                    if (mainImg) mainImg.src = t.dataset.src;
+                    thumbWrap.querySelectorAll('.pd-thumb').forEach(function(x){ x.classList.remove('active'); });
+                    t.classList.add('active');
+                });
+            });
+            if (thumbWrap.querySelector('.pd-thumb')) thumbWrap.querySelector('.pd-thumb').classList.add('active');
+        }
+        if (mainImg && images && images.length) mainImg.src = images[0].image_path;
+    }
+
+    function activateBtn(btn) {
+        roomVariants.forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+    }
+
+    function loadRoom(btn) {
+        var roomData = {
+            id: btn.dataset.roomId, name: btn.dataset.roomName,
+            price: Number(btn.dataset.roomPrice) || 0,
+            area: btn.dataset.roomArea, status: btn.dataset.roomStatus,
+        };
+        activateBtn(btn);
+        fetch('/property/' + propertyId + '/room/' + btn.dataset.roomNumber)
+            .then(function(r) { return r.json(); })
+            .then(function(data) { updatePanel(data.room || roomData, data.images || []); })
+            .catch(function() { updatePanel(roomData, []); });
+    }
+
+    var first = Array.from(roomVariants).find(function(b) { return b.dataset.roomStatus === 'available'; }) || roomVariants[0];
+    if (first) loadRoom(first);
+    roomVariants.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            if (btn.classList.contains('rented')) return;
+            loadRoom(btn);
+        });
+    });
+});
+</script>
+
+{% endblock %}{# /block content #}

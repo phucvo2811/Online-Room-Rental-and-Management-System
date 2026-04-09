@@ -1,0 +1,132 @@
+{% extends 'layouts/admin.twig' %}
+{% set active_page = 'banners' %}
+{% block title %}Quản lý banner{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-800 mb-0">Quản lý banner</h4>
+    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#bannerModal">
+        <i class="bi bi-plus-lg"></i> Thêm banner
+    </button>
+</div>
+
+<form method="POST" action="{{ route('/admin/banners/order') }}">
+    <div class="table-responsive mb-3">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th style="width:220px">Ảnh</th>
+                    <th>Link</th>
+                    <th>Trạng thái</th>
+                    <th style="width:110px">Thứ tự</th>
+                    <th class="text-end" style="width:170px">Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in banners %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <img src="{{ upload_url ~ b.image_url }}" alt="" class="rounded" style="width:160px;height:80px;object-fit:cover">
+                            </div>
+                        </td>
+                        <td class="text-break">
+                            {% if b.link %}
+                                <a href="{{ b.link }}" target="_blank" rel="noopener">{{ b.link }}</a>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="status-badge {{ b.status }}">
+                                {{ b.status == 'active' ? 'Hiển thị' : 'Ẩn' }}
+                            </span>
+                        </td>
+                        <td>
+                            <input type="number" class="form-control form-control-sm" name="order[{{ b.id }}]" value="{{ b.order }}" min="0">
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ route('/admin/banners/' ~ b.id ~ '/edit') }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form action="{{ route('/admin/banners/' ~ b.id ~ '/toggle') }}" method="POST" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-outline-{{ b.status == 'active' ? 'warning' : 'success' }}">
+                                    <i class="bi bi-{{ b.status == 'active' ? 'eye-slash' : 'eye' }}"></i>
+                                </button>
+                            </form>
+                            <form action="{{ route('/admin/banners/' ~ b.id ~ '/delete') }}" method="POST" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn xóa banner này?');">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-4">Chưa có banner nào.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if banners is not empty %}
+        <button type="submit" class="btn btn-sm btn-secondary">Cập nhật thứ tự</button>
+    {% endif %}
+</form>
+
+<div class="modal fade" id="bannerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form id="bannerForm" method="POST" action="{{ route('/admin/banners/create') }}" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ editing ? 'Chỉnh sửa banner' : 'Thêm banner mới' }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Ảnh banner</label>
+                        <input type="file" name="image" class="form-control" {{ editing ? '' : 'required' }}>
+                        {% if editing and editing.image_url %}
+                            <div class="mt-2">
+                                <img src="{{ upload_url ~ editing.image_url }}" style="max-width:100%;height:auto;border-radius:8px;">
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Link (tùy chọn)</label>
+                        <input type="url" name="link" class="form-control" placeholder="https://..." value="{{ editing.link ?? '' }}">
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label">Trạng thái</label>
+                            <select name="status" class="form-select">
+                                <option value="active" {{ editing.status == 'active' ? 'selected' : '' }}>Hiển thị</option>
+                                <option value="inactive" {{ editing.status == 'inactive' ? 'selected' : '' }}>Ẩn</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Thứ tự</label>
+                            <input type="number" name="order" class="form-control" value="{{ editing.order ?? 0 }}" min="0">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary btn-sm">{{ editing ? 'Lưu' : 'Thêm' }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if editing %}
+<script>
+    const modal = new bootstrap.Modal(document.getElementById('bannerModal'));
+    modal.show();
+    document.getElementById('bannerForm').action = '{{ route('/admin/banners/' ~ editing.id ~ '/edit') }}';
+</script>
+{% endif %}
+{% endblock %}

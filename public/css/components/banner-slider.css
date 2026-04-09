@@ -1,0 +1,31 @@
+.banner-slider-section {
+  position: relative;
+}
+
+.banner-slider-section .carousel {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
+}
+
+.banner-slider-section .carousel-item img {
+  height: clamp(220px, 35vw, 420px);
+  object-fit: cover;
+}
+
+.banner-slider-section .carousel-control-prev-icon,
+.banner-slider-section .carousel-control-next-icon {
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.35));
+}
+
+.banner-slider-section .carousel-indicators [data-bs-target] {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.7);
+  border: none;
+}
+
+.banner-slider-section .carousel-indicators .active {
+  background-color: rgba(255, 255, 255, 1);
+}

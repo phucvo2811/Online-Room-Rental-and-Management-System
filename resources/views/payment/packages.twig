@@ -1,0 +1,123 @@
+{% extends 'layouts/base.twig' %}
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+
+    {# ── Heading ── #}
+    <div class="text-center mb-5">
+        <h2 class="fw-800 mb-2">Nâng cấp <span style="color:var(--primary)">PRO</span></h2>
+        <p class="text-muted">Tăng khả năng hiển thị, thu hút người thuê nhanh hơn.</p>
+    </div>
+
+    {# ── Flash message ── #}
+    {% if session.flash.danger %}
+        <div class="alert alert-danger alert-dismissible fade show mb-4">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ session.flash.danger }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    {% endif %}
+
+    {# ── Package cards ── #}
+    <div class="row g-4 justify-content-center">
+
+        {# 7-day package #}
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body p-4 text-center">
+                    <div class="mb-3">
+                        <span class="badge bg-secondary px-3 py-2 rounded-pill fs-6">Dùng thử</span>
+                    </div>
+                    <h4 class="fw-700">PRO 7 ngày</h4>
+                    <div class="display-5 fw-800 my-3" style="color:var(--primary)">
+                        49.000<small class="fs-6 fw-400 text-muted">đ</small>
+                    </div>
+                    <ul class="list-unstyled text-start mb-4">
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Ưu tiên hiển thị 7 ngày</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Badge <strong>PRO</strong> trên tin</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Xuất hiện đầu kết quả tìm kiếm</li>
+                        <li class="text-muted"><i class="bi bi-x-circle me-2"></i>Không có hỗ trợ ưu tiên</li>
+                    </ul>
+                    <form method="POST" action="{{ route('/payment/create') }}">
+                        <input type="hidden" name="_csrf" value="{{ csrf }}">
+                        <input type="hidden" name="package_type" value="7_days">
+                        <button class="btn btn-outline-primary w-100 rounded-pill fw-600">
+                            <i class="bi bi-credit-card me-1"></i> Thanh toán VNPay
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        {# 30-day package – featured #}
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow" style="border: 2px solid var(--primary)!important; transform: scale(1.03);">
+                <div class="card-body p-4 text-center">
+                    <div class="mb-3">
+                        <span class="badge px-3 py-2 rounded-pill fs-6 text-white" style="background:var(--primary)">
+                            <i class="bi bi-star-fill me-1"></i> Phổ biến nhất
+                        </span>
+                    </div>
+                    <h4 class="fw-700">PRO 30 ngày</h4>
+                    <div class="display-5 fw-800 my-3" style="color:var(--primary)">
+                        149.000<small class="fs-6 fw-400 text-muted">đ</small>
+                    </div>
+                    <ul class="list-unstyled text-start mb-4">
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Ưu tiên hiển thị 30 ngày</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Badge <strong>PRO</strong> trên tin</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Xuất hiện đầu kết quả tìm kiếm</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Hỗ trợ ưu tiên qua live chat</li>
+                    </ul>
+                    <form method="POST" action="{{ route('/payment/create') }}">
+                        <input type="hidden" name="_csrf" value="{{ csrf }}">
+                        <input type="hidden" name="package_type" value="30_days">
+                        <button class="btn btn-primary w-100 rounded-pill fw-600">
+                            <i class="bi bi-credit-card me-1"></i> Thanh toán VNPay
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        {# 90-day package #}
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body p-4 text-center">
+                    <div class="mb-3">
+                        <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fs-6">Tiết kiệm nhất</span>
+                    </div>
+                    <h4 class="fw-700">PRO 90 ngày</h4>
+                    <div class="display-5 fw-800 my-3" style="color:var(--primary)">
+                        399.000<small class="fs-6 fw-400 text-muted">đ</small>
+                    </div>
+                    <ul class="list-unstyled text-start mb-4">
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Ưu tiên hiển thị 90 ngày</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Badge <strong>PRO</strong> trên tin</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Xuất hiện đầu kết quả tìm kiếm</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Hỗ trợ ưu tiên qua live chat</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Tiết kiệm ~11% so với 30 ngày x3</li>
+                    </ul>
+                    <form method="POST" action="{{ route('/payment/create') }}">
+                        <input type="hidden" name="_csrf" value="{{ csrf }}">
+                        <input type="hidden" name="package_type" value="90_days">
+                        <button class="btn btn-outline-warning w-100 rounded-pill fw-600 text-dark">
+                            <i class="bi bi-credit-card me-1"></i> Thanh toán VNPay
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ── VNPay trust badge ── #}
+    <div class="text-center mt-5 text-muted small">
+        <i class="bi bi-shield-lock-fill text-success me-1"></i>
+        Thanh toán bảo mật qua cổng <strong>VNPay</strong> — hỗ trợ tất cả ngân hàng nội địa & ví điện tử.
+        <br>
+        <a href="{{ route('/payment/history') }}" class="text-decoration-none mt-1 d-inline-block">
+            <i class="bi bi-clock-history me-1"></i>Xem lịch sử thanh toán
+        </a>
+    </div>
+
+</div>
+{% endblock %}

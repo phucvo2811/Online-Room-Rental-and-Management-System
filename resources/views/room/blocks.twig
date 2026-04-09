@@ -1,0 +1,169 @@
+{% extends 'layouts/base.twig' %}
+{% block title %}Bất động sản của tôi{% endblock %}
+
+{% block content %}
+{% set type_labels = {
+    'boarding_house': 'Nhà trọ',
+    'dormitory':      'KTX',
+    'homestay':       'Homestay',
+    'mini_house':     'Căn hộ Mini',
+    'full_house':     'Nhà nguyên căn'
+} %}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h4 class="fw-800 mb-1"><i class="bi bi-building me-2"></i>Bất động sản của tôi</h4>
+            <p class="text-muted mb-0">{{ blocks|length }} bất động sản</p>
+        </div>
+        <a href="{{ route('/blocks/create') }}" class="btn btn-primary fw-600">
+            <i class="bi bi-plus-lg me-2"></i>Tạo BĐS mới
+        </a>
+    </div>
+
+    {% if blocks is empty %}
+        <div class="empty-state">
+            <div class="icon"><i class="bi bi-building-add"></i></div>
+            <h5>Bạn chưa có bất động sản nào</h5>
+            <p>Tạo bất động sản để quản lý phòng và đăng tin cho thuê.</p>
+            <a href="{{ route('/blocks/create') }}" class="btn btn-primary">Tạo BĐS</a>
+        </div>
+    {% else %}
+        <div class="row g-3">
+            {% for block in blocks %}
+                {% set is_composite = block.type in ['boarding_house','dormitory','homestay'] %}
+                {% set status_color = block.status == 'approved' ? 'success' : (block.status == 'pending' ? 'warning' : 'danger') %}
+                {% set status_label = block.status == 'approved' ? 'Đã duyệt' : (block.status == 'pending' ? 'Chờ duyệt' : 'Từ chối') %}
+
+                <div class="col-md-6 col-xl-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body d-flex flex-column gap-2 p-3">
+
+                            {# Header row #}
+                            <div class="d-flex justify-content-between align-items-start gap-2">
+                                <span class="badge bg-secondary">{{ type_labels[block.type] ?? block.type }}</span>
+                                <span class="badge bg-{{ status_color }} text-{{ block.status == 'pending' ? 'dark' : 'white' }}">
+                                    {{ status_label }}
+                                </span>
+                            </div>
+
+                            {# Name & Address #}
+                            <div>
+                                <h5 class="fw-700 mb-1 lh-sm">{{ block.name }}</h5>
+                                <p class="small text-muted mb-0">
+                                    <i class="bi bi-geo-alt text-primary me-1"></i>{{ block.address }}
+                                </p>
+                            </div>
+
+                            {# Price Info #}
+                            <div>
+                                {% if is_composite %}
+                                    {% if block.min_display_price %}
+                                        <div class="fw-700 text-primary">
+                                            {{ block.min_display_price|money }}
+                                            {% if block.max_display_price and block.max_display_price != block.min_display_price %}
+                                                - {{ block.max_display_price|money }}
+                                            {% endif %}
+                                            <small class="text-muted fw-400">/tháng</small>
+                                        </div>
+                                    {% else %}
+                                        <span class="small text-muted">Chưa có giá (thêm phòng)</span>
+                                    {% endif %}
+                                    <div class="small text-muted mt-1">
+                                        <i class="bi bi-door-closed me-1"></i>{{ block.room_count|default(0) }} phòng
+                                    </div>
+                                {% else %}
+                                    {% if block.price %}
+                                        <div class="fw-700 text-primary">
+                                            {{ block.price|money }} <small class="text-muted fw-400">/tháng</small>
+                                        </div>
+                                    {% else %}
+                                        <span class="small text-muted">Chưa có giá</span>
+                                    {% endif %}
+                                    {% if block.area %}
+                                        <div class="small text-muted mt-1">
+                                            <i class="bi bi-arrows-angle-expand me-1"></i>{{ block.area }} m²
+                                        </div>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+
+                            {# Pending notice #}
+                            {% if block.status == 'pending' %}
+                                <div class="alert alert-warning py-1 px-2 mb-0 small">
+                                    <i class="bi bi-clock me-1"></i>Đang chờ admin phê duyệt. Bạn chưa thể đăng tin.
+                                </div>
+                            {% elseif block.status == 'rejected' %}
+                                <div class="alert alert-danger py-1 px-2 mb-0 small">
+                                    <i class="bi bi-x-circle me-1"></i>BĐS bị từ chối. Sửa lại và liên hệ admin.
+                                </div>
+                            {% endif %}
+
+                            {# Post status badge #}
+                            {% if block.latest_post %}
+                                {% set lp = block.latest_post %}
+                                <div class="d-flex align-items-center gap-2">
+                                    {% if lp.status == 'active' %}
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-broadcast me-1"></i>Đang đăng tin
+                                        </span>
+                                        <span class="text-muted small">
+                                            <i class="bi bi-eye me-1"></i>{{ lp.view_count|default(0) }} lượt xem
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">
+                                            <i class="bi bi-pause-circle me-1"></i>Bài đăng tạm ẩn
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+
+                            {# Actions #}
+                            <div class="d-flex gap-1 flex-wrap mt-auto pt-1">
+                                <a href="{{ route('/blocks/' ~ block.id ~ '/rooms') }}"
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-door-open me-1"></i>Phòng
+                                    {% if block.room_count is defined and block.room_count > 0 %}
+                                        <span class="badge bg-primary ms-1" style="font-size:.65rem;">{{ block.room_count }}</span>
+                                    {% endif %}
+                                </a>
+                                {% if block.status == 'approved' %}
+                                    {% if not block.latest_post %}
+                                        <a href="{{ route('/post') }}?property_id={{ block.id }}"
+                                           class="btn btn-sm btn-success">
+                                            <i class="bi bi-megaphone me-1"></i>Đăng tin
+                                        </a>
+                                    {% else %}
+                                        <form action="{{ route('/posts/' ~ block.latest_post.id ~ '/toggle') }}" method="POST" class="d-inline">
+                                            {% if block.latest_post.status == 'active' %}
+                                                <button class="btn btn-sm btn-warning" title="Tạm đóng bài đăng">
+                                                    <i class="bi bi-pause-circle me-1"></i>Đóng tin
+                                                </button>
+                                            {% else %}
+                                                <button class="btn btn-sm btn-outline-success" title="Mở lại bài đăng">
+                                                    <i class="bi bi-play-circle me-1"></i>Mở lại
+                                                </button>
+                                            {% endif %}
+                                        </form>
+                                    {% endif %}
+                                {% endif %}
+                                <a href="{{ route('/blocks/' ~ block.id ~ '/edit') }}"
+                                   class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form action="{{ route('/blocks/' ~ block.id ~ '/delete') }}" method="POST"
+                                      class="d-inline" onsubmit="return confirm('Xóa bất động sản này? Tất cả phòng liên quan cũng bị xóa.');">
+                                    <button class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

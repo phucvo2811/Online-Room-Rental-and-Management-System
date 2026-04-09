@@ -1,0 +1,94 @@
+{#
+    Map Picker Component
+    ─────────────────────────────────────────────
+    Variables (optional, used when editing):
+      lat     – existing latitude  (e.g. block.latitude)
+      lng     – existing longitude (e.g. block.longitude)
+      address – existing formatted address (e.g. block.map_address)
+    ─────────────────────────────────────────────
+    Outputs three hidden form fields:
+      latitude, longitude, map_address
+    And renders a Google Maps picker UI.
+#}
+<div class="map-picker-wrapper" id="mapPickerWrapper">
+
+    {# ── Search bar ── #}
+    <div class="input-group mb-2" id="mapSearchGroup">
+        <span class="input-group-text bg-white border-end-0">
+            <i class="bi bi-search text-muted"></i>
+        </span>
+        <input type="text"
+               id="mapSearchInput"
+               class="form-control border-start-0 ps-0"
+               placeholder="Nhập địa chỉ rồi nhấn Enter hoặc nút 🔍"
+               value="{{ address ?? '' }}"
+               autocomplete="off"
+               aria-label="Tìm kiếm địa điểm">
+        <button type="button" class="btn btn-outline-primary" data-action="map-search" title="Tìm kiếm">
+            <i class="bi bi-search"></i>
+        </button>
+        <button type="button" class="btn btn-outline-secondary" id="mapClearBtn"
+                title="Xoá vị trí đã chọn"
+                onclick="mapPickerClearLocation()"
+                style="display:{{ (lat is not empty) ? '' : 'none' }}">
+            <i class="bi bi-x-lg"></i>
+        </button>
+    </div>
+
+    <p class="text-muted small mb-2">
+        <i class="bi bi-info-circle me-1"></i>
+        Nhập địa chỉ để tìm kiếm, hoặc <strong>click trực tiếp lên bản đồ</strong> để đặt điểm.
+        Kéo ghim để tinh chỉnh vị trí.
+    </p>
+
+    {# ── Map canvas ── #}
+    <div id="mapPickerCanvas"
+         style="width:100%; height:380px; border-radius:12px;
+                border:1.5px solid var(--color-border,#e5e7eb);
+                overflow:hidden; background:#f0f0f0; position:relative;">
+        <div id="mapLoadingMsg"
+             style="display:flex; flex-direction:column; align-items:center;
+                    justify-content:center; height:100%; gap:10px; color:#aaa;">
+            <i class="bi bi-map" style="font-size:3rem;"></i>
+            <span class="small fw-600">Đang tải bản đồ…</span>
+        </div>
+    </div>
+
+    {# ── Validation error ── #}
+    <div id="mapPickerError"
+         class="text-danger small mt-1"
+         style="display:none;">
+        <i class="bi bi-exclamation-triangle-fill me-1"></i>Vui lòng chọn vị trí trên bản đồ
+    </div>
+
+    {# ── Coordinate display ── #}
+    <div id="mapCoordDisplay"
+         class="mt-2 small d-flex align-items-center gap-2 flex-wrap"
+         style="display:{{ (lat is not empty) ? 'flex' : 'none' }}!important;">
+        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25"
+              style="font-size:.78rem; padding:5px 10px; border-radius:20px;">
+            <i class="bi bi-bullseye me-1"></i>
+            Đã chọn: <span id="mapCoordText">{{ lat ?? '' }}{{ lat is not empty ? ', ' : '' }}{{ lng ?? '' }}</span>
+        </span>
+        {% if address is not empty %}
+        <span class="text-muted" id="mapAddrText">{{ address }}</span>
+        {% else %}
+        <span class="text-muted" id="mapAddrText"></span>
+        {% endif %}
+    </div>
+
+    {# ── Open in Google Maps link (shown after selection) ── #}
+    <div id="mapOpenLink" class="mt-1" style="display:{{ (lat is not empty) ? '' : 'none' }}">
+        <a id="mapGoogleLink"
+           href="https://www.google.com/maps?q={{ lat ?? 0 }},{{ lng ?? 0 }}"
+           target="_blank" rel="noopener"
+           class="small text-decoration-none">
+            <i class="bi bi-box-arrow-up-right me-1"></i>Xem vị trí trong Google Maps
+        </a>
+    </div>
+</div>
+
+{# ── Hidden form fields ── #}
+<input type="hidden" name="latitude"    id="inputLatitude"   value="{{ lat ?? '' }}">
+<input type="hidden" name="longitude"   id="inputLongitude"  value="{{ lng ?? '' }}">
+<input type="hidden" name="map_address" id="inputMapAddress" value="{{ address ?? '' }}">

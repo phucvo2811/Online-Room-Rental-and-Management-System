@@ -1,0 +1,391 @@
+{% extends 'layouts/base.twig' %}
+{% block title %}{{ pageTitle }}{% endblock %}
+
+{% block head %}
+<link href="{{ asset('css/components/chat.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="chat-layout">
+
+    {# ─── SIDEBAR ────────────────────────────────────────────────── #}
+    <aside class="chat-sidebar" id="chatSidebar">
+        <div class="chat-sidebar-header">
+            <h5 class="fw-700 mb-0 d-flex align-items-center gap-2">
+                <i class="bi bi-chat-dots-fill text-primary"></i>Tin nhắn
+            </h5>
+            <span class="chat-unread-total" id="totalUnreadBadge" style="display:none"></span>
+        </div>
+
+        <div class="chat-conv-list" id="convList">
+            {% if conversations is empty %}
+            <div class="text-center py-5 text-muted small px-3">
+                <i class="bi bi-chat-dots fs-2 d-block mb-2 opacity-30"></i>
+                Chưa có cuộc trò chuyện nào.<br>
+                Nhấn <strong>Liên hệ chủ trọ</strong> trên trang phòng để bắt đầu.
+            </div>
+            {% endif %}
+
+            {% for c in conversations %}
+            <a href="{{ route('/chat/' ~ c.id) }}"
+               class="chat-conv-item {{ activeConv and activeConv.id == c.id ? 'active' : '' }}"
+               data-conv-id="{{ c.id }}">
+
+                <div class="chat-conv-avatar-wrap">
+                    {% if c.partner_avatar %}
+                        <img src="{{ upload_url ~ c.partner_avatar }}" alt="{{ c.partner_name }}" class="chat-avatar">
+                    {% else %}
+                        <div class="chat-avatar-placeholder">{{ c.partner_name|slice(0,1)|upper }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="chat-conv-info">
+                    <div class="chat-conv-row1">
+                        <span class="chat-conv-name {{ c.unread_count > 0 ? 'fw-700' : '' }}">{{ c.partner_name }}</span>
+                        {% if c.last_message_at %}
+                            <span class="chat-conv-time">{{ c.last_message_at|date('H:i') }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="chat-conv-row2">
+                        <span class="chat-conv-preview {{ c.unread_count > 0 ? 'fw-600 text-dark' : '' }}">
+                            {{ c.last_message ? c.last_message|slice(0,38) ~ (c.last_message|length > 38 ? '…' : '') : 'Bắt đầu nhắn tin…' }}
+                        </span>
+                        {% if c.unread_count > 0 %}
+                            <span class="chat-unread-dot">{{ c.unread_count }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </aside>
+
+    {# ─── CHAT MAIN ──────────────────────────────────────────────── #}
+    <div class="chat-main" id="chatMain">
+
+        {% if activeConv %}
+
+        {# Header #}
+        <div class="chat-window-header">
+            <button class="btn btn-sm chat-back-btn d-md-none" onclick="showSidebar()">
+                <i class="bi bi-arrow-left fs-5"></i>
+            </button>
+            <div class="chat-conv-avatar-wrap sm">
+                {% if activeConv.partner_avatar %}
+                    <img src="{{ upload_url ~ activeConv.partner_avatar }}" alt="" class="chat-avatar">
+                {% else %}
+                    <div class="chat-avatar-placeholder">{{ activeConv.partner_name|slice(0,1)|upper }}</div>
+                {% endif %}
+            </div>
+            <div class="ms-1">
+                <div class="fw-700 lh-sm">{{ activeConv.partner_name }}</div>
+                <div class="chat-status-text small" id="partnerStatus">Đang hoạt động</div>
+            </div>
+        </div>
+
+        {# Messages area #}
+        <div class="chat-messages" id="chatMessages">
+            <div id="msgContainer">
+                {% for msg in messages %}
+                <div class="chat-msg {{ msg.sender_id == auth.id ? 'chat-msg--mine' : 'chat-msg--theirs' }}"
+                     data-msg-id="{{ msg.id }}">
+                    {% if msg.sender_id != auth.id %}
+                    <div class="chat-msg-av">
+                        {% if msg.sender_avatar %}
+                            <img src="{{ upload_url ~ msg.sender_avatar }}" alt="" class="chat-avatar xs">
+                        {% else %}
+                            <div class="chat-avatar-placeholder xs">{{ msg.sender_name|slice(0,1)|upper }}</div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    <div class="chat-msg-col">
+                        <div class="chat-msg-bubble">{{ msg.content|nl2br }}</div>
+                        <div class="chat-msg-time">{{ msg.created_at|date('H:i') }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            {# Typing indicator #}
+            <div id="typingIndicator" class="chat-msg chat-msg--theirs d-none">
+                <div class="chat-msg-av">
+                    {% if activeConv.partner_avatar %}
+                        <img src="{{ upload_url ~ activeConv.partner_avatar }}" alt="" class="chat-avatar xs">
+                    {% else %}
+                        <div class="chat-avatar-placeholder xs">{{ activeConv.partner_name|slice(0,1)|upper }}</div>
+                    {% endif %}
+                </div>
+                <div class="chat-msg-col">
+                    <div class="chat-msg-bubble typing-bubble">
+                        <span class="typing-dot"></span>
+                        <span class="typing-dot"></span>
+                        <span class="typing-dot"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Input bar #}
+        <div class="chat-input-bar">
+            <form id="chatForm" class="chat-input-wrap" onsubmit="sendMessage(event)">
+                <input type="hidden" name="csrf_token" value="{{ csrf }}">
+                <textarea id="msgInput"
+                          class="chat-textarea"
+                          placeholder="Nhập tin nhắn… (Enter để gửi)"
+                          rows="1"
+                          onkeydown="onMsgKeydown(event)"
+                          oninput="onTyping(this)"></textarea>
+                <button type="submit" class="chat-send-btn" title="Gửi">
+                    <i class="bi bi-send-fill"></i>
+                </button>
+            </form>
+        </div>
+
+        {# ─── Chat JS ─────────────────────────────────────────────── #}
+        <script>
+        (function () {
+            const CONV_ID     = {{ activeConv.id }};
+            const MY_ID       = {{ auth.id }};
+            const POLL_URL    = '{{ route('/chat/' ~ activeConv.id ~ '/poll') }}';
+            const SEND_URL    = '{{ route('/chat/send') }}';
+            const TYPING_URL  = '{{ route('/chat/' ~ activeConv.id ~ '/typing') }}';
+            const UPLOAD_URL  = '{{ upload_url }}';
+            const CSRF        = document.querySelector('[name=csrf_token]').value;
+
+            let lastMsgId     = {{ messages is not empty ? messages|last.id : 0 }};
+            let typingTimer   = null;
+            let isTypingSent  = false;
+            let pollActive    = true;
+
+            // ─── helpers ───────────────────────────────────────────
+            const $ = id => document.getElementById(id);
+
+            function scrollBottom(smooth) {
+                const el = $('chatMessages');
+                el.scrollTo({ top: el.scrollHeight, behavior: smooth ? 'smooth' : 'instant' });
+            }
+
+            function isNearBottom() {
+                const el = $('chatMessages');
+                return el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+            }
+
+            function escapeHtml(s) {
+                return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            }
+
+            function fmtTime(iso) {
+                const d = new Date(iso);
+                return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+            }
+
+            // ─── render one message bubble ─────────────────────────
+            function renderMsg(msg) {
+                const isMine = parseInt(msg.sender_id) === MY_ID;
+                const av = msg.sender_avatar
+                    ? `<img src="${UPLOAD_URL}${msg.sender_avatar}" alt="" class="chat-avatar xs">`
+                    : `<div class="chat-avatar-placeholder xs">${(msg.sender_name||'?')[0].toUpperCase()}</div>`;
+                const text = escapeHtml(msg.content).replace(/\n/g, '<br>');
+                const time = fmtTime(msg.created_at);
+
+                const div = document.createElement('div');
+                div.className = `chat-msg ${isMine ? 'chat-msg--mine' : 'chat-msg--theirs'}`;
+                div.dataset.msgId = msg.id;
+                div.innerHTML = `
+                    ${!isMine ? `<div class="chat-msg-av">${av}</div>` : ''}
+                    <div class="chat-msg-col">
+                        <div class="chat-msg-bubble">${text}</div>
+                        <div class="chat-msg-time">${time}</div>
+                    </div>`;
+                return div;
+            }
+
+            // ─── send message ──────────────────────────────────────
+            async function sendMessage(e) {
+                e.preventDefault();
+                const input   = $('msgInput');
+                const content = input.value.trim();
+                if (!content) return;
+
+                input.value = '';
+                input.style.height = 'auto';
+
+                // Optimistic UI
+                const tempId  = 'tmp_' + Date.now();
+                const tempEl  = renderMsg({
+                    id: tempId, sender_id: MY_ID, content,
+                    sender_name: '', sender_avatar: null,
+                    created_at: new Date().toISOString()
+                });
+                tempEl.dataset.tempId = tempId;
+                tempEl.classList.add('chat-msg--sending');
+                $('msgContainer').appendChild(tempEl);
+                scrollBottom(true);
+
+                try {
+                    const fd = new FormData();
+                    fd.append('conversation_id', CONV_ID);
+                    fd.append('content', content);
+                    fd.append('csrf_token', CSRF);
+
+                    const res  = await fetch(SEND_URL, { method: 'POST', body: fd });
+                    const data = await res.json();
+
+                    if (data.ok) {
+                        tempEl.classList.remove('chat-msg--sending');
+                        tempEl.dataset.msgId = data.message.id;
+                        delete tempEl.dataset.tempId;
+                        lastMsgId = Math.max(lastMsgId, data.message.id);
+                        updateSidebarPreview(data.message);
+                    } else {
+                        tempEl.classList.add('chat-msg--failed');
+                    }
+                } catch (_) {
+                    tempEl.classList.add('chat-msg--failed');
+                }
+            }
+            window.sendMessage = sendMessage;
+
+            // ─── Enter = send, Shift+Enter = newline ───────────────
+            function onMsgKeydown(e) {
+                const ta = e.target;
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    $('chatForm').dispatchEvent(new Event('submit'));
+                }
+                ta.style.height = 'auto';
+                ta.style.height = Math.min(ta.scrollHeight, 130) + 'px';
+            }
+            window.onMsgKeydown = onMsgKeydown;
+
+            // ─── typing indicator (debounced) ──────────────────────
+            function onTyping(ta) {
+                ta.style.height = 'auto';
+                ta.style.height = Math.min(ta.scrollHeight, 130) + 'px';
+                if (!isTypingSent) {
+                    isTypingSent = true;
+                    fetch(TYPING_URL, { method: 'POST' }).catch(() => {});
+                }
+                clearTimeout(typingTimer);
+                typingTimer = setTimeout(() => { isTypingSent = false; }, 2500);
+            }
+            window.onTyping = onTyping;
+
+            // ─── update sidebar last-message preview ───────────────
+            function updateSidebarPreview(msg) {
+                const item = document.querySelector(`.chat-conv-item[data-conv-id="${CONV_ID}"]`);
+                if (!item) return;
+                const preview = item.querySelector('.chat-conv-preview');
+                if (preview) {
+                    const pre = parseInt(msg.sender_id) === MY_ID ? 'Bạn: ' : '';
+                    const txt = (msg.content || '').slice(0, 38);
+                    preview.textContent = pre + txt + (msg.content.length > 38 ? '…' : '');
+                    preview.classList.remove('fw-600','text-dark');
+                }
+                const timeEl = item.querySelector('.chat-conv-time');
+                if (timeEl) timeEl.textContent = fmtTime(msg.created_at);
+            }
+
+            // ─── poll ──────────────────────────────────────────────
+            let pollFailures = 0;
+            async function poll() {
+                if (!pollActive || document.hidden) return;
+                try {
+                    const res  = await fetch(`${POLL_URL}?after=${lastMsgId}`);
+                    const data = await res.json();
+                    if (!data.ok) return;
+
+                    pollFailures = 0;
+                    const container = $('msgContainer');
+                    const wasBottom = isNearBottom();
+
+                    if (data.messages && data.messages.length) {
+                        data.messages.forEach(msg => {
+                            // skip if already in DOM (optimistic bubble merged)
+                            if (container.querySelector(`[data-msg-id="${msg.id}"]`)) {
+                                lastMsgId = Math.max(lastMsgId, msg.id);
+                                return;
+                            }
+                            container.appendChild(renderMsg(msg));
+                            lastMsgId = Math.max(lastMsgId, msg.id);
+                        });
+                        updateSidebarPreview(data.messages[data.messages.length - 1]);
+                        if (wasBottom) scrollBottom(true);
+                    }
+
+                    // Typing indicator
+                    const ti = $('typingIndicator');
+                    if (data.typing) {
+                        ti.classList.remove('d-none');
+                        if (wasBottom) scrollBottom(false);
+                    } else {
+                        ti.classList.add('d-none');
+                    }
+
+                    // Partner status
+                    const ps = $('partnerStatus');
+                    if (ps) ps.textContent = 'Đang hoạt động';
+                } catch (_) {
+                    pollFailures++;
+                    if (pollFailures > 5) {
+                        const ps = $('partnerStatus');
+                        if (ps) ps.textContent = 'Mất kết nối…';
+                    }
+                }
+            }
+
+            // ─── init ────────────────────────────────────────────
+            scrollBottom(false);
+            setInterval(poll, 1500);
+
+            // Pause poll when tab is hidden
+            document.addEventListener('visibilitychange', () => {
+                pollActive = !document.hidden;
+            });
+        })();
+        </script>
+
+        {% else %}
+
+        {# Empty state: no conversation selected #}
+        <div class="chat-empty">
+            <div class="chat-empty-icon"><i class="bi bi-chat-heart-fill"></i></div>
+            <h5 class="fw-700">Chọn một cuộc trò chuyện</h5>
+            <p class="text-muted">Hoặc nhấn <strong>Liên hệ chủ trọ</strong> ngay trên trang chi tiết phòng.</p>
+        </div>
+
+        {% endif %}
+    </div>{# .chat-main #}
+
+</div>{# .chat-layout #}
+
+{# ─── Mobile sidebar toggle ─────────────────────────────────────────── #}
+<script>
+function showSidebar() {
+    document.getElementById('chatSidebar').classList.remove('chat-sidebar--hidden');
+    document.getElementById('chatMain').classList.add('chat-main--hidden');
+}
+{% if activeConv %}
+// On mobile: auto-hide sidebar when a conversation is open
+if (window.innerWidth < 768) {
+    document.getElementById('chatSidebar').classList.add('chat-sidebar--hidden');
+    document.getElementById('chatMain').classList.remove('chat-main--hidden');
+}
+{% endif %}
+
+// Global unread badge update (navbar)
+async function refreshUnreadBadge() {
+    try {
+        const res  = await fetch('{{ route('/api/chat/unread') }}');
+        const data = await res.json();
+        const badges = document.querySelectorAll('.chat-navbar-badge');
+        badges.forEach(b => {
+            if (data.count > 0) { b.textContent = data.count; b.style.display = ''; }
+            else { b.style.display = 'none'; }
+        });
+    } catch(_) {}
+}
+setInterval(refreshUnreadBadge, 10000);
+refreshUnreadBadge();
+</script>
+{% endblock %}

@@ -1,0 +1,95 @@
+{% extends 'layouts/base.twig' %}
+{% block title %}Bài đăng của tôi{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center gap-2 mb-4 flex-wrap">
+        <div>
+            <h4 class="fw-800 mb-1"><i class="bi bi-stickies me-2"></i>Bài đăng của tôi</h4>
+            <p class="text-muted mb-0">{{ posts|length }} bài đăng</p>
+        </div>
+        <a href="{{ route('/post') }}" class="btn btn-primary fw-600">
+            <i class="bi bi-plus-lg me-2"></i>Đăng tin mới
+        </a>
+    </div>
+
+    {% if posts is empty %}
+        <div class="empty-state">
+            <div class="icon"><i class="bi bi-journal-text"></i></div>
+            <h5>Bạn chưa có bài đăng nào</h5>
+            <p>Đăng tin để quảng bá bất động sản của bạn.</p>
+            <a href="{{ route('/post') }}" class="btn btn-primary">Đăng tin ngay</a>
+        </div>
+    {% else %}
+        <div class="row g-3">
+            {% for post in posts %}
+                {% set is_approved = post.status == 'active' or (post.view_count is defined and post.view_count > 0) %}
+                {% set status_color = post.status == 'active' ? 'success' : (is_approved ? 'secondary' : 'warning') %}
+                {% set status_label = post.status == 'active' ? 'Đang hiển thị' : (is_approved ? 'Đã đóng' : 'Chờ duyệt') %}
+
+                <div class="col-md-6 col-xl-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body d-flex flex-column gap-2 p-3">
+
+                            <div class="d-flex justify-content-between align-items-start gap-2">
+                                <span class="badge bg-{{ status_color }} text-white">
+                                    {{ status_label }}
+                                </span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="text-muted small">
+                                        <i class="bi bi-eye me-1"></i>{{ post.view_count|default(0) }}
+                                    </span>
+                                    <span class="text-muted small">{{ post.created_at|date('d/m/Y') }}</span>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h6 class="fw-700 mb-1 lh-sm">{{ post.title }}</h6>
+                                {% if post.property_name %}
+                                    <p class="small text-muted mb-0">
+                                        <i class="bi bi-building text-primary me-1"></i>{{ post.property_name }}
+                                    </p>
+                                {% endif %}
+                            </div>
+
+                            {% if post.description %}
+                                <p class="small text-muted mb-0">
+                                    {{ post.description|length > 90 ? post.description|slice(0,90) ~ '…' : post.description }}
+                                </p>
+                            {% endif %}
+
+                            <div class="d-flex gap-1 flex-wrap mt-auto pt-1">
+                                <a href="{{ route('/posts/' ~ post.id) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye me-1"></i>Xem
+                                </a>
+                                <a href="{{ route('/posts/' ~ post.id ~ '/edit') }}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                {% if post.status == 'active' %}
+                                    <form action="{{ route('/posts/' ~ post.id ~ '/toggle') }}" method="POST" class="d-inline">
+                                        <button class="btn btn-sm btn-outline-warning" title="Tạm đóng bài đăng">
+                                            <i class="bi bi-pause-circle"></i>
+                                        </button>
+                                    </form>
+                                {% elseif is_approved %}
+                                    <form action="{{ route('/posts/' ~ post.id ~ '/toggle') }}" method="POST" class="d-inline">
+                                        <button class="btn btn-sm btn-outline-success" title="Mở lại bài đăng">
+                                            <i class="bi bi-play-circle"></i>
+                                        </button>
+                                    </form>
+                                {% endif %}
+                                <form action="{{ route('/posts/' ~ post.id ~ '/delete') }}" method="POST"
+                                      class="d-inline" onsubmit="return confirm('Xóa bài đăng này?');">
+                                    <button class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

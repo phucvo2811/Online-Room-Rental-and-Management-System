@@ -1,0 +1,347 @@
+{% extends 'layouts/base.twig' %}
+{% block title %}Chính sách bảo mật — {{ app_name }}{% endblock %}
+{% block meta_desc %}Chính sách bảo mật dữ liệu cá nhân của {{ app_name }} tại Cần Thơ.{% endblock %}
+
+{% block head %}
+<style>
+/* ── shared with terms.twig (duplicated here for standalone delivery) ── */
+.policy-hero {
+    background: linear-gradient(135deg, #1E3A5F 0%, #2D5A8E 100%);
+    padding: 56px 0 40px;
+}
+.policy-hero-eyebrow {
+    font-size: .72rem; font-weight: 800; letter-spacing: .16em;
+    text-transform: uppercase; color: rgba(249,115,22,.9); margin-bottom: 10px;
+}
+.policy-hero h1 {
+    font-size: clamp(1.7rem, 4vw, 2.4rem);
+    font-weight: 900; color: #fff; margin-bottom: 10px; line-height: 1.2;
+}
+.policy-hero p { color: rgba(255,255,255,.65); font-size: .93rem; margin: 0; }
+.policy-meta {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,.1); border-radius: 20px;
+    padding: 5px 14px; margin-top: 16px;
+    font-size: .78rem; color: rgba(255,255,255,.7);
+}
+.policy-layout {
+    display: grid; grid-template-columns: 220px 1fr;
+    gap: 40px; align-items: start;
+    max-width: 1060px; margin: 0 auto;
+    padding: 48px 20px 80px;
+}
+@media (max-width: 767px) {
+    .policy-layout { grid-template-columns: 1fr; padding: 24px 16px 60px; }
+}
+.policy-toc {
+    position: sticky; top: 80px;
+    background: #fff; border-radius: 16px;
+    border: 1.5px solid var(--color-border, #e5e7eb);
+    padding: 20px 18px;
+    box-shadow: 0 2px 16px rgba(0,0,0,.06);
+}
+.policy-toc-title {
+    font-size: .7rem; font-weight: 800; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--color-text-muted, #6b7280);
+    margin-bottom: 14px; padding-bottom: 10px;
+    border-bottom: 1.5px solid var(--color-border, #e5e7eb);
+}
+.policy-toc a {
+    display: flex; align-items: flex-start; gap: 8px;
+    font-size: .8rem; font-weight: 600;
+    color: var(--color-text-muted, #6b7280);
+    text-decoration: none; padding: 6px 8px; border-radius: 8px; line-height: 1.35;
+    transition: all .15s; border-left: 2px solid transparent;
+}
+.policy-toc a:hover { background: #eff6ff; color: #1d4ed8; }
+.policy-toc a.active {
+    background: #eff6ff; color: #1d4ed8;
+    border-left-color: #3b82f6; font-weight: 700;
+}
+.policy-toc-num {
+    flex-shrink: 0; width: 20px; height: 20px;
+    background: #3b82f6; color: #fff;
+    border-radius: 50%; font-size: .65rem; font-weight: 800;
+    display: flex; align-items: center; justify-content: center; margin-top: 1px;
+}
+.policy-toc a.active .policy-toc-num { background: #1d4ed8; }
+@media (max-width: 767px) { .policy-toc { position: static; } }
+.policy-article { min-width: 0; }
+.policy-section { margin-bottom: 44px; scroll-margin-top: 88px; }
+.policy-section-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 16px; padding-bottom: 12px;
+    border-bottom: 2px solid var(--color-bg, #fafaf9);
+}
+.policy-section-num {
+    width: 34px; height: 34px; flex-shrink: 0;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    color: #fff; border-radius: 10px;
+    font-size: .85rem; font-weight: 900;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 3px 10px rgba(59,130,246,.3);
+}
+.policy-section h2 { font-size: 1.15rem; font-weight: 800; color: var(--color-text, #1a1a1a); margin: 0; }
+.policy-article p { color: #4b5563; font-size: .93rem; line-height: 1.8; margin-bottom: 12px; }
+.policy-article ul { padding-left: 0; list-style: none; margin-bottom: 12px; }
+.policy-article li {
+    display: flex; gap: 10px; align-items: flex-start;
+    font-size: .92rem; color: #4b5563; line-height: 1.7; margin-bottom: 8px;
+}
+.policy-article li::before {
+    content: ''; width: 7px; height: 7px; border-radius: 50%;
+    background: #3b82f6; flex-shrink: 0; margin-top: 7px;
+}
+.policy-callout {
+    background: #fef3ec; border-left: 4px solid var(--color-primary, #f97316);
+    border-radius: 0 12px 12px 0; padding: 14px 18px; margin: 16px 0;
+    font-size: .89rem; color: #92400e; line-height: 1.7;
+}
+.policy-callout.blue { background: #eff6ff; border-left-color: #3b82f6; color: #1e40af; }
+.policy-callout.green { background: #ecfdf5; border-left-color: #10b981; color: #065f46; }
+.policy-tag {
+    display: inline-block; font-size: .65rem; font-weight: 800;
+    letter-spacing: .08em; text-transform: uppercase; padding: 2px 10px;
+    border-radius: 20px; margin-bottom: 10px;
+}
+.policy-tag.blue { background: #eff6ff; color: #2563eb; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{# ── Hero ── #}
+<div class="policy-hero">
+    <div class="container">
+        <div class="policy-hero-eyebrow"><i class="bi bi-shield-lock me-1"></i>Pháp lý</div>
+        <h1>Chính sách bảo mật</h1>
+        <p>Cam kết bảo vệ dữ liệu cá nhân của bạn tại <strong class="text-white">{{ app_name }}</strong></p>
+        <div class="policy-meta">
+            <i class="bi bi-calendar3"></i> Cập nhật lần cuối: 05/04/2026
+        </div>
+    </div>
+</div>
+
+{# ── Body ── #}
+<div style="background:var(--color-bg,#fafaf9)">
+    <div class="policy-layout">
+
+        {# Sticky TOC #}
+        <aside class="policy-toc" id="policyToc">
+            <div class="policy-toc-title"><i class="bi bi-list-ul me-1"></i>Mục lục</div>
+            <nav>
+                <a href="#s1"><span class="policy-toc-num">1</span>Thông tin thu thập</a>
+                <a href="#s2"><span class="policy-toc-num">2</span>Mục đích sử dụng</a>
+                <a href="#s3"><span class="policy-toc-num">3</span>Bảo vệ dữ liệu</a>
+                <a href="#s4"><span class="policy-toc-num">4</span>Chia sẻ bên thứ ba</a>
+                <a href="#s5"><span class="policy-toc-num">5</span>Cookie</a>
+                <a href="#s6"><span class="policy-toc-num">6</span>Quyền của bạn</a>
+            </nav>
+        </aside>
+
+        {# Article #}
+        <article class="policy-article">
+
+            {# 1 — Thông tin thu thập #}
+            <div class="policy-section" id="s1">
+                <div class="policy-section-header">
+                    <div class="policy-section-num">1</div>
+                    <h2>Thông tin chúng tôi thu thập</h2>
+                </div>
+                <span class="policy-tag blue">Dữ liệu cá nhân</span>
+                <p>
+                    Để cung cấp dịch vụ, chúng tôi thu thập một số thông tin cá nhân khi bạn đăng ký
+                    hoặc sử dụng <strong>{{ app_name }}</strong>:
+                </p>
+                <ul>
+                    <li><strong>Thông tin định danh:</strong> Họ tên, địa chỉ email, số điện thoại đăng ký tài khoản.</li>
+                    <li><strong>Thông tin đăng nhập:</strong> Tên đăng nhập, mật khẩu (được mã hóa bcrypt).</li>
+                    <li><strong>Thông tin bất động sản:</strong> Địa chỉ, ảnh, mô tả phòng do chủ trọ cung cấp.</li>
+                    <li><strong>Thông tin thiết bị:</strong> Địa chỉ IP, loại trình duyệt, hệ điều hành (tự động).</li>
+                    <li><strong>Lịch sử hoạt động:</strong> Phòng đã xem, yêu thích, tìm kiếm (tự động).</li>
+                </ul>
+                <div class="policy-callout blue">
+                    <i class="bi bi-info-circle-fill me-2"></i>
+                    Chúng tôi <strong>không</strong> thu thập thông tin thẻ tín dụng hay tài khoản ngân hàng của bạn.
+                    Mọi giao dịch được xử lý trực tiếp qua cổng thanh toán bảo mật.
+                </div>
+            </div>
+
+            {# 2 — Mục đích sử dụng #}
+            <div class="policy-section" id="s2">
+                <div class="policy-section-header">
+                    <div class="policy-section-num">2</div>
+                    <h2>Cách chúng tôi sử dụng dữ liệu</h2>
+                </div>
+                <p>Thông tin thu thập được sử dụng cho các mục đích sau:</p>
+                <ul>
+                    <li>Tạo và quản lý tài khoản người dùng trên hệ thống.</li>
+                    <li>Hiển thị và kết nối các tin đăng phòng trọ phù hợp với người tìm kiếm.</li>
+                    <li>Gửi thông báo liên quan đến hoạt động tài khoản (duyệt tin, giao dịch...).</li>
+                    <li>Xử lý thanh toán gói PRO và lưu trữ lịch sử giao dịch.</li>
+                    <li>Phân tích hành vi người dùng để cải thiện trải nghiệm dịch vụ.</li>
+                    <li>Ngăn chặn gian lận và đảm bảo an ninh cho toàn bộ nền tảng.</li>
+                </ul>
+                <div class="policy-callout green">
+                    <i class="bi bi-megaphone-fill me-2"></i>
+                    Chúng tôi <strong>không</strong> gửi email quảng cáo nếu bạn không đăng ký nhận tin.
+                    Bạn có thể hủy đăng ký nhận thông báo bất kỳ lúc nào trong phần cài đặt tài khoản.
+                </div>
+            </div>
+
+            {# 3 — Bảo vệ dữ liệu #}
+            <div class="policy-section" id="s3">
+                <div class="policy-section-header">
+                    <div class="policy-section-num">3</div>
+                    <h2>Bảo vệ dữ liệu của bạn</h2>
+                </div>
+                <p>
+                    Chúng tôi thực hiện các biện pháp kỹ thuật và tổ chức nhằm bảo vệ dữ liệu của bạn
+                    khỏi truy cập trái phép, mất mát hoặc phá hủy:
+                </p>
+                <ul>
+                    <li>Mật khẩu được mã hóa bằng thuật toán <strong>bcrypt</strong> với salt ngẫu nhiên.</li>
+                    <li>Kết nối website sử dụng giao thức <strong>HTTPS/TLS</strong> để mã hóa dữ liệu truyền tải.</li>
+                    <li>Cơ sở dữ liệu được kiểm soát quyền truy cập nghiêm ngặt và sao lưu định kỳ.</li>
+                    <li>Hệ thống được giám sát liên tục để phát hiện và ngăn chặn các mối đe dọa bảo mật.</li>
+                    <li>Nhân viên có quyền truy cập dữ liệu người dùng phải tuân thủ quy định bảo mật nội bộ.</li>
+                </ul>
+                <div class="policy-callout">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    Dù chúng tôi nỗ lực bảo vệ dữ liệu của bạn, không có phương thức truyền tải qua Internet nào
+                    có thể đảm bảo an toàn tuyệt đối 100%.
+                </div>
+            </div>
+
+            {# 4 — Chia sẻ bên thứ ba #}
+            <div class="policy-section" id="s4">
+                <div class="policy-section-header">
+                    <div class="policy-section-num">4</div>
+                    <h2>Chia sẻ với bên thứ ba</h2>
+                </div>
+                <p>
+                    Chúng tôi <strong>không bán</strong> dữ liệu cá nhân của bạn. Thông tin chỉ được chia sẻ
+                    trong các trường hợp sau:
+                </p>
+                <ul>
+                    <li>
+                        <strong>Cổng thanh toán VNPay:</strong> Khi bạn thực hiện giao dịch, thông tin thanh toán
+                        được chuyển đến VNPay để xử lý. VNPay có chính sách bảo mật riêng và tuân thủ tiêu chuẩn PCI-DSS.
+                    </li>
+                    <li>
+                        <strong>Dịch vụ bản đồ:</strong> Địa chỉ bất động sản có thể được gửi đến Google Maps API
+                        để hiển thị vị trí trên bản đồ.
+                    </li>
+                    <li>
+                        <strong>Yêu cầu pháp lý:</strong> Chúng tôi có thể cung cấp thông tin theo yêu cầu của cơ
+                        quan nhà nước có thẩm quyền khi có lệnh hoặc yêu cầu hợp lệ.
+                    </li>
+                </ul>
+                <div class="policy-callout blue">
+                    <i class="bi bi-shield-fill me-2"></i>
+                    Trước khi chia sẻ dữ liệu, chúng tôi yêu cầu các đối tác cam kết bảo mật thông tin
+                    và chỉ sử dụng dữ liệu đúng mục đích được ủy quyền.
+                </div>
+            </div>
+
+            {# 5 — Cookie #}
+            <div class="policy-section" id="s5">
+                <div class="policy-section-header">
+                    <div class="policy-section-num">5</div>
+                    <h2>Chính sách Cookie</h2>
+                </div>
+                <p>
+                    Website sử dụng cookie và các công nghệ tương tự để cải thiện trải nghiệm người dùng:
+                </p>
+                <ul>
+                    <li>
+                        <strong>Cookie phiên (Session):</strong> Lưu trữ thông tin đăng nhập trong phiên làm việc.
+                        Tự động xóa khi đóng trình duyệt.
+                    </li>
+                    <li>
+                        <strong>Cookie tùy chọn:</strong> Ghi nhớ cài đặt như ngôn ngữ, bộ lọc tìm kiếm để
+                        tiện lợi hơn trong các lần truy cập tiếp theo.
+                    </li>
+                    <li>
+                        <strong>Cookie phân tích:</strong> Thu thập dữ liệu ẩn danh về cách người dùng tương tác
+                        với website nhằm cải thiện tính năng.
+                    </li>
+                </ul>
+                <p>
+                    Bạn có thể quản lý hoặc xóa cookie thông qua cài đặt trình duyệt. Tuy nhiên, việc
+                    vô hiệu hóa cookie có thể ảnh hưởng đến một số tính năng của website.
+                </p>
+            </div>
+
+            {# 6 — Quyền của bạn #}
+            <div class="policy-section" id="s6">
+                <div class="policy-section-header">
+                    <div class="policy-section-num">6</div>
+                    <h2>Quyền của bạn đối với dữ liệu</h2>
+                </div>
+                <p>Theo quy định về bảo vệ dữ liệu cá nhân, bạn có các quyền sau:</p>
+                <ul>
+                    <li><strong>Quyền truy cập:</strong> Yêu cầu xem toàn bộ dữ liệu cá nhân chúng tôi đang lưu trữ về bạn.</li>
+                    <li><strong>Quyền chỉnh sửa:</strong> Cập nhật thông tin không chính xác hoặc không đầy đủ.</li>
+                    <li><strong>Quyền xóa:</strong> Yêu cầu xóa tài khoản và tất cả dữ liệu liên quan (trừ dữ liệu pháp lý bắt buộc lưu giữ).</li>
+                    <li><strong>Quyền phản đối:</strong> Phản đối việc xử lý dữ liệu của bạn trong một số trường hợp nhất định.</li>
+                    <li><strong>Quyền di chuyển:</strong> Nhận bản sao dữ liệu của bạn ở định dạng có thể đọc được.</li>
+                </ul>
+                <p>
+                    Để thực hiện bất kỳ quyền nào ở trên, vui lòng liên hệ với chúng tôi qua email
+                    <strong>support@phongtro.com</strong>. Chúng tôi sẽ phản hồi trong vòng <strong>5 ngày làm việc</strong>.
+                </p>
+                <div class="policy-callout green">
+                    <i class="bi bi-envelope-fill me-2"></i>
+                    Email: <strong>support@phongtro.com</strong><br>
+                    Hotline: <strong>0292 123 456</strong> (7:00 – 21:00, Thứ 2 – Chủ nhật)
+                </div>
+
+                {# Related links #}
+                <div class="d-flex gap-3 flex-wrap mt-4 pt-4" style="border-top:1.5px solid var(--color-border,#e5e7eb)">
+                    <a href="{{ route('/terms') }}" class="btn btn-outline-primary fw-700 rounded-pill">
+                        <i class="bi bi-file-earmark-text me-2"></i>Điều khoản sử dụng
+                    </a>
+                    <a href="{{ route('/') }}" class="btn btn-outline-secondary fw-700 rounded-pill">
+                        <i class="bi bi-house me-2"></i>Về trang chủ
+                    </a>
+                </div>
+            </div>
+
+        </article>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    var sections = document.querySelectorAll('.policy-section');
+    var tocLinks = document.querySelectorAll('#policyToc a');
+    if (!sections.length || !tocLinks.length) return;
+
+    function setActive() {
+        var scrollY = window.scrollY + 120;
+        var current = '';
+        sections.forEach(function (s) {
+            if (s.offsetTop <= scrollY) current = s.id;
+        });
+        tocLinks.forEach(function (a) {
+            a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+        });
+    }
+
+    window.addEventListener('scroll', setActive, { passive: true });
+    setActive();
+
+    tocLinks.forEach(function (a) {
+        a.addEventListener('click', function (e) {
+            e.preventDefault();
+            var target = document.querySelector(this.getAttribute('href'));
+            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    });
+})();
+</script>
+{% endblock %}

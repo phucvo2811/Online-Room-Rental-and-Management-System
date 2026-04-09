@@ -1,0 +1,314 @@
+{#
+  filter-bar.twig — Modern sticky horizontal filter bar
+  For the /properties listing page.
+  Requires context vars: filters (object), districts (array, optional)
+#}
+
+{# ── Type labels ─────────────────────────────────────────────── #}
+{% set _types = {
+    'boarding_house': 'Nhà trọ',
+    'dormitory':      'KTX',
+    'mini_house':     'Căn hộ Mini',
+    'full_house':     'Nhà nguyên căn',
+    'homestay':       'Homestay'
+} %}
+
+{# ── Resolve current pill labels from filters ────────────────── #}
+{% set _priceKey = (filters.price_min ~ ',' ~ filters.price_max) %}
+{% set _priceLabels = {
+    '0,1000000':       'Dưới 1 triệu',
+    '1000000,3000000': '1 – 3 triệu',
+    '3000000,5000000': '3 – 5 triệu',
+    '5000000,':        'Trên 5 triệu'
+} %}
+{% set _priceLabel  = _priceLabels[_priceKey] ?? 'Giá' %}
+{% set _priceActive = (filters.price_min is not empty or filters.price_max is not empty) %}
+{% set _typeLabel   = _types[filters.type] ?? 'Loại phòng' %}
+{% set _typeActive  = (filters.type is not empty) %}
+{% set _sortLabels  = { 'price_asc':'Giá tăng dần','price_desc':'Giá giảm dần','popular':'Phổ biến','area':'Diện tích lớn' } %}
+{% set _sortLabel   = _sortLabels[filters.sort] ?? 'Sắp xếp' %}
+{% set _sortActive  = (filters.sort is not empty and filters.sort != 'newest') %}
+{% set _moreCount   = (filters.has_wifi ? 1:0) + (filters.has_ac ? 1:0) + (filters.status is not empty ? 1:0) %}
+{% set _moreActive  = (_moreCount > 0) %}
+{% set _moreLabel   = _moreActive ? ('Bộ lọc (' ~ _moreCount ~ ')') : 'Bộ lọc' %}
+{% set _locActive   = (filters.location is not empty) %}
+
+{# ── Progress bar ────────────────────────────────────────────── #}
+<div class="fbar-progress" id="fbarProgress"></div>
+
+{# ── Wrapper (sticky) ─────────────────────────────────────────── #}
+<div class="fbar-wrapper" id="fbarWrapper">
+<div class="container fbar-container">
+
+    {# ── Hidden form (all actual filter inputs) ───────────────── #}
+    <form id="fbarForm"
+          action="{{ route('/properties') }}"
+          method="GET"
+          data-type-key="type">
+
+        <input type="hidden" name="location"    id="fv_location"    value="{{ filters.location ?? '' }}">
+        <input type="hidden" name="price_min"   id="fv_price_min"   value="{{ filters.price_min ?? '' }}">
+        <input type="hidden" name="price_max"   id="fv_price_max"   value="{{ filters.price_max ?? '' }}">
+        <input type="hidden" name="type"        id="fv_type"        value="{{ filters.type ?? '' }}">
+        <input type="hidden" name="sort"        id="fv_sort"        value="{{ filters.sort ?? 'newest' }}">
+        <input type="hidden" name="status"      id="fv_status"      value="{{ filters.status ?? '' }}">
+        <input type="hidden" name="has_wifi"    id="fv_has_wifi"    value="{{ filters.has_wifi ?? '' }}">
+        <input type="hidden" name="has_ac"      id="fv_has_ac"      value="{{ filters.has_ac ?? '' }}">
+        <input type="hidden" name="has_parking" id="fv_has_parking" value="{{ filters.has_parking ?? '' }}">
+        <input type="hidden" name="allow_pet"   id="fv_allow_pet"   value="{{ filters.allow_pet ?? '' }}">
+        <input type="hidden" name="allow_cooking" id="fv_allow_cooking" value="{{ filters.allow_cooking ?? '' }}">
+        <input type="hidden" name="district_id" id="fv_district_id" value="{{ filters.district_id ?? '' }}">
+        <input type="hidden" name="ward_id"     id="fv_ward_id"     value="{{ filters.ward_id ?? '' }}">
+        <input type="hidden" name="area_min"    id="fv_area_min"    value="{{ filters.area_min ?? '' }}">
+        <input type="hidden" name="area_max"    id="fv_area_max"    value="{{ filters.area_max ?? '' }}">
+    </form>
+
+    {# ── DESKTOP: scrollable pill row ─────────────────────────── #}
+    <div class="fbar-scroll fbar-desktop-only" role="toolbar" aria-label="Bộ lọc tìm kiếm">
+
+        {# 1 ── Search location ───────────────────────────────── #}
+        <div class="fpill fpill-search" title="Tìm kiếm khu vực">
+            <span class="fsearch-icon"><i class="bi bi-search"></i></span>
+            <input type="text"
+                   data-key="location"
+                   placeholder="Nhập khu vực..."
+                   value="{{ filters.location ?? '' }}"
+                   autocomplete="off"
+                   aria-label="Tìm kiếm khu vực">
+        </div>
+
+        {# 2 ── Price ─────────────────────────────────────────── #}
+        <div class="fpill-wrap">
+            <button type="button"
+                    class="fpill {{ _priceActive ? 'active' : '' }}"
+                    id="fpill-price"
+                    onclick="fbarToggle('price')"
+                    aria-haspopup="listbox" aria-expanded="false">
+                <i class="bi bi-tag"></i>
+                <span class="fpill-label">{{ _priceLabel }}</span>
+                <i class="bi bi-chevron-down fpill-chevron"></i>
+            </button>
+            <div class="fdrop" id="fdrop-price" role="listbox" aria-label="Chọn khoảng giá">
+                <div class="fdrop-label">Khoảng giá / tháng</div>
+                <div class="fdrop-option {{ not _priceActive ? 'selected' : '' }}"
+                     data-price=","
+                     onclick="fbarSetPrice('','','Giá')">
+                    <span class="fopt-radio"></span> Tất cả mức giá
+                </div>
+                <div class="fdrop-option {{ _priceKey == '0,1000000' ? 'selected' : '' }}"
+                     data-price="0,1000000"
+                     onclick="fbarSetPrice(0,1000000,'Dưới 1 triệu')">
+                    <span class="fopt-radio"></span> Dưới 1 triệu
+                </div>
+                <div class="fdrop-option {{ _priceKey == '1000000,3000000' ? 'selected' : '' }}"
+                     data-price="1000000,3000000"
+                     onclick="fbarSetPrice(1000000,3000000,'1 – 3 triệu')">
+                    <span class="fopt-radio"></span> 1 – 3 triệu
+                </div>
+                <div class="fdrop-option {{ _priceKey == '3000000,5000000' ? 'selected' : '' }}"
+                     data-price="3000000,5000000"
+                     onclick="fbarSetPrice(3000000,5000000,'3 – 5 triệu')">
+                    <span class="fopt-radio"></span> 3 – 5 triệu
+                </div>
+                <div class="fdrop-option {{ filters.price_min == 5000000 and not filters.price_max ? 'selected' : '' }}"
+                     data-price="5000000,"
+                     onclick="fbarSetPrice(5000000,'','Trên 5 triệu')">
+                    <span class="fopt-radio"></span> Trên 5 triệu
+                </div>
+            </div>
+        </div>
+
+        {# 3 ── Property type ──────────────────────────────────── #}
+        <div class="fpill-wrap">
+            <button type="button"
+                    class="fpill {{ _typeActive ? 'active' : '' }}"
+                    id="fpill-type"
+                    onclick="fbarToggle('type')"
+                    aria-haspopup="listbox">
+                <i class="bi bi-house-door"></i>
+                <span class="fpill-label">{{ _typeLabel }}</span>
+                <i class="bi bi-chevron-down fpill-chevron"></i>
+            </button>
+            <div class="fdrop" id="fdrop-type" style="min-width:272px;">
+                <div class="fdrop-label">Loại bất động sản</div>
+                <div class="fchip-grid">
+                    {% for key, label in _types %}
+                        <div class="fchip {{ filters.type == key ? 'selected' : '' }}"
+                             data-type="{{ key }}"
+                             onclick="fbarSetType('{{ key }}')">
+                            {{ label }}
+                        </div>
+                    {% endfor %}
+                </div>
+                {% if _typeActive %}
+                    <div class="fdrop-divider"></div>
+                    <button type="button" class="fbtn-reset w-100" style="font-size:12.5px; padding:7px 12px;" onclick="fbarSetType('')">
+                        <i class="bi bi-x-circle me-1"></i> Bỏ chọn loại
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+
+        {# 4 ── Sort ──────────────────────────────────────────── #}
+        <div class="fpill-wrap">
+            <button type="button"
+                    class="fpill {{ _sortActive ? 'active' : '' }}"
+                    id="fpill-sort"
+                    onclick="fbarToggle('sort')"
+                    aria-haspopup="listbox">
+                <i class="bi bi-arrow-down-up"></i>
+                <span class="fpill-label">{{ _sortLabel }}</span>
+                <i class="bi bi-chevron-down fpill-chevron"></i>
+            </button>
+            <div class="fdrop" id="fdrop-sort">
+                <div class="fdrop-label">Sắp xếp theo</div>
+                <div class="fdrop-option {{ not filters.sort or filters.sort == 'newest' ? 'selected' : '' }}"
+                     data-sort="newest"
+                     onclick="fbarSetSort('newest')">
+                    <span class="fopt-radio"></span>
+                    <span>🕐 Mới nhất</span>
+                </div>
+                <div class="fdrop-option {{ filters.sort == 'price_asc' ? 'selected' : '' }}"
+                     data-sort="price_asc"
+                     onclick="fbarSetSort('price_asc')">
+                    <span class="fopt-radio"></span>
+                    <span>↑ Giá tăng dần</span>
+                </div>
+                <div class="fdrop-option {{ filters.sort == 'price_desc' ? 'selected' : '' }}"
+                     data-sort="price_desc"
+                     onclick="fbarSetSort('price_desc')">
+                    <span class="fopt-radio"></span>
+                    <span>↓ Giá giảm dần</span>
+                </div>
+                <div class="fdrop-option {{ filters.sort == 'popular' ? 'selected' : '' }}"
+                     data-sort="popular"
+                     onclick="fbarSetSort('popular')">
+                    <span class="fopt-radio"></span>
+                    <span>🔥 Phổ biến nhất</span>
+                </div>
+                <div class="fdrop-option {{ filters.sort == 'area' ? 'selected' : '' }}"
+                     data-sort="area"
+                     onclick="fbarSetSort('area')">
+                    <span class="fopt-radio"></span>
+                    <span>📐 Diện tích lớn</span>
+                </div>
+            </div>
+        </div>
+
+        {# 5 ── More filters (amenities + status + district) ───── #}
+        <div class="fpill-wrap">
+            <button type="button"
+                    class="fpill {{ _moreActive ? 'active' : '' }}"
+                    id="fpill-more"
+                    onclick="fbarToggle('more')"
+                    aria-haspopup="dialog">
+                <i class="bi bi-sliders2"></i>
+                <span class="fpill-label">{{ _moreLabel }}</span>
+                <i class="bi bi-chevron-down fpill-chevron"></i>
+            </button>
+            <div class="fdrop fdrop-right" id="fdrop-more" style="min-width:300px;">
+
+                <div class="fdrop-label">Tiện ích có sẵn</div>
+                <div class="famenity-grid">
+                    <div class="famenity-item {{ filters.has_wifi ? 'selected' : '' }}"
+                         data-amenity="has_wifi" onclick="fbarToggleAmenity(this)">
+                        <i class="bi bi-wifi text-primary"></i> WiFi
+                    </div>
+                    <div class="famenity-item {{ filters.has_ac ? 'selected' : '' }}"
+                         data-amenity="has_ac" onclick="fbarToggleAmenity(this)">
+                        <i class="bi bi-snow2 text-info"></i> Máy lạnh
+                    </div>
+                    <div class="famenity-item {{ filters.has_parking ? 'selected' : '' }}"
+                         data-amenity="has_parking" onclick="fbarToggleAmenity(this)">
+                        <i class="bi bi-car-front text-secondary"></i> Gửi xe
+                    </div>
+                    <div class="famenity-item {{ filters.allow_pet ? 'selected' : '' }}"
+                         data-amenity="allow_pet" onclick="fbarToggleAmenity(this)">
+                        🐾 Thú cưng
+                    </div>
+                    <div class="famenity-item {{ filters.allow_cooking ? 'selected' : '' }}"
+                         data-amenity="allow_cooking" onclick="fbarToggleAmenity(this)">
+                        <i class="bi bi-fire text-warning"></i> Nấu ăn
+                    </div>
+                </div>
+
+                <div class="fdrop-divider"></div>
+                <div class="fdrop-label">Trạng thái phòng</div>
+                <div class="fchip-grid mb-3">
+                    <div class="fchip {{ not filters.status ? 'selected' : '' }}"
+                         data-status=""
+                         onclick="fbarSetStatus('')">Tất cả</div>
+                    <div class="fchip {{ filters.status == 'available' ? 'selected' : '' }}"
+                         data-status="available"
+                         onclick="fbarSetStatus('available')">✅ Còn phòng</div>
+                    <div class="fchip {{ filters.status == 'full' ? 'selected' : '' }}"
+                         data-status="full"
+                         onclick="fbarSetStatus('full')">🔴 Hết phòng</div>
+                </div>
+
+                {% if districts is defined and districts %}
+                    <div class="fdrop-divider"></div>
+                    <div class="fdrop-label">Quận / Huyện</div>
+                    <div style="max-height:160px; overflow-y:auto;">
+                        <div class="fdrop-option {{ not filters.district_id ? 'selected' : '' }}"
+                             onclick="fbarSetDistrict('', 'Quận / Huyện')">
+                            <span class="fopt-radio"></span> Tất cả quận / huyện
+                        </div>
+                        {% for d in districts %}
+                            <div class="fdrop-option {{ filters.district_id == d.id ? 'selected' : '' }}"
+                                 onclick="fbarSetDistrict('{{ d.id }}', '{{ d.name|escape('js') }}')"
+                                 {% if filters.district_id == d.id %}data-district-name="{{ d.name }}"{% endif %}>
+                                <span class="fopt-radio"></span> {{ d.name }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <div class="fdrop-divider"></div>
+                <button type="button" class="fbtn-apply w-100" onclick="fbarApply(); fbarToggle('more')">
+                    <i class="bi bi-check2-circle me-1"></i> Áp dụng bộ lọc
+                </button>
+            </div>
+        </div>
+
+        {# ── Spacer + action buttons ─────────────────────────── #}
+        <div class="fbar-spacer">
+            <button type="button" class="fbtn-apply" onclick="fbarApply()" aria-label="Tìm kiếm">
+                <i class="bi bi-search"></i>&nbsp;Tìm
+            </button>
+            <button type="button" class="fbtn-reset" onclick="fbarReset()" id="fbarResetBtn" aria-label="Đặt lại bộ lọc">
+                <i class="bi bi-x-circle"></i>&nbsp;Đặt lại
+            </button>
+        </div>
+
+    </div>{# /fbar-scroll #}
+
+    {# ── MOBILE: compact row (search + filter button) ─────────── #}
+    <div class="d-flex d-md-none align-items-center gap-2 pb-3">
+        <div class="fpill fpill-search flex-fill" style="min-width:0; max-width:none;">
+            <span class="fsearch-icon"><i class="bi bi-search"></i></span>
+            <input type="text"
+                   data-key="location"
+                   placeholder="Nhập khu vực..."
+                   value="{{ filters.location ?? '' }}"
+                   autocomplete="off">
+        </div>
+        <button type="button" class="fbtn-mobile" onclick="fbarOpenMobile()" aria-label="Mở bộ lọc">
+            <i class="bi bi-sliders2"></i> Lọc
+            <span class="fbadge" id="fbarMobileBadge" style="display:none">0</span>
+        </button>
+    </div>
+
+    {# ── Active filter tags (shared desktop + mobile) ─────────── #}
+    <div class="fbar-tags" id="fbarTags" aria-live="polite"></div>
+
+</div>{# /container #}
+</div>{# /fbar-wrapper #}
+
+{# ── Config for filter.js ─────────────────────────────────────── #}
+<script>
+window.FBAR_CONFIG = {
+    action: '{{ route('/properties') }}',
+    typeLabels: {{ _types|json_encode|raw }}
+};
+</script>

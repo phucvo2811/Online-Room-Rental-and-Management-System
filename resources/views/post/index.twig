@@ -1,0 +1,117 @@
+{% extends 'layouts/base.twig' %}
+{% block title %}Chọn BĐS để đăng tin{% endblock %}
+
+{% block content %}
+{% set type_labels = {
+    'boarding_house': 'Nhà trọ',
+    'dormitory':      'KTX',
+    'homestay':       'Homestay',
+    'mini_house':     'Căn hộ Mini',
+    'full_house':     'Nhà nguyên căn'
+} %}
+
+<div class="container py-4" style="max-width:900px">
+
+    {# Breadcrumb / header #}
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h4 class="fw-800 mb-1"><i class="bi bi-megaphone me-2"></i>Đăng tin cho thuê</h4>
+            <p class="text-muted mb-0 small">Chọn bất động sản đã duyệt để tạo bài đăng</p>
+        </div>
+        <a href="{{ route('/my-blocks') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-building me-1"></i>Quản lý BĐS
+        </a>
+    </div>
+
+    {# Flash messages #}
+    {% if flash_message is defined and flash_message %}
+        <div class="alert alert-{{ flash_type|default('info') }} alert-dismissible mb-4">
+            {{ flash_message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    {% endif %}
+
+    {% if properties is empty %}
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-building-slash text-muted" style="font-size:3rem"></i>
+                <h5 class="mt-3 fw-700">Chưa có BĐS nào được duyệt</h5>
+                <p class="text-muted mb-4">Để đăng tin bạn cần tạo bất động sản và chờ admin phê duyệt.</p>
+                <div class="d-flex gap-2 justify-content-center flex-wrap">
+                    <a href="{{ route('/blocks/create') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-lg me-1"></i>Tạo BĐS mới
+                    </a>
+                    <a href="{{ route('/my-blocks') }}" class="btn btn-outline-secondary">
+                        Xem danh sách BĐS
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="row g-3">
+            {% for property in properties %}
+                {% set is_composite = property.type in ['boarding_house','dormitory','homestay'] %}
+
+                <div class="col-md-6">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body d-flex flex-column gap-2 p-3">
+
+                            <div class="d-flex justify-content-between align-items-start gap-2">
+                                <span class="badge bg-secondary">{{ type_labels[property.type] ?? property.type }}</span>
+                                <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Đã duyệt</span>
+                            </div>
+
+                            <div>
+                                <h6 class="fw-700 mb-1">{{ property.name }}</h6>
+                                <p class="small text-muted mb-0">
+                                    <i class="bi bi-geo-alt text-primary me-1"></i>{{ property.address }}
+                                </p>
+                            </div>
+
+                            <div>
+                                {% if is_composite %}
+                                    {% if property.min_display_price %}
+                                        <span class="fw-700 text-primary">
+                                            {{ property.min_display_price|money }}
+                                            {% if property.max_display_price and property.max_display_price != property.min_display_price %}
+                                                — {{ property.max_display_price|money }}
+                                            {% endif %}
+                                        </span>
+                                        <span class="text-muted small">/tháng</span>
+                                    {% else %}
+                                        <span class="text-muted small">Chưa có giá</span>
+                                    {% endif %}
+                                    <div class="small text-muted mt-1">
+                                        <i class="bi bi-door-closed me-1"></i>{{ property.room_count|default(0) }} phòng
+                                    </div>
+                                {% else %}
+                                    {% if property.price %}
+                                        <span class="fw-700 text-primary">{{ property.price|money }}</span>
+                                        <span class="text-muted small">/tháng</span>
+                                    {% else %}
+                                        <span class="text-muted small">Chưa có giá</span>
+                                    {% endif %}
+                                    {% if property.area %}
+                                        <div class="small text-muted mt-1">
+                                            <i class="bi bi-arrows-angle-expand me-1"></i>{{ property.area }} m²
+                                        </div>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+
+                            <a href="{{ route('/post/create') }}?property_id={{ property.id }}"
+                               class="btn btn-primary btn-sm mt-auto">
+                                <i class="bi bi-megaphone me-1"></i>Đăng tin BĐS này
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <p class="text-muted small mt-3">
+            <i class="bi bi-info-circle me-1"></i>Mỗi BĐS chỉ có 1 bài đăng hoạt động cùng lúc.
+        </p>
+    {% endif %}
+</div>
+{% endblock %}

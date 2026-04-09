@@ -1,0 +1,384 @@
+{% extends 'layouts/base.twig' %}
+{% block title %}Điều khoản sử dụng — {{ app_name }}{% endblock %}
+{% block meta_desc %}Điều khoản sử dụng dịch vụ tìm phòng trọ {{ app_name }} tại Cần Thơ.{% endblock %}
+
+{% block head %}
+<style>
+/* ── Policy page layout ──────────────────────────────────── */
+.policy-hero {
+    background: linear-gradient(135deg, #1E3A5F 0%, #2D5A8E 100%);
+    padding: 56px 0 40px;
+    margin-bottom: 0;
+}
+.policy-hero-eyebrow {
+    font-size: .72rem; font-weight: 800; letter-spacing: .16em;
+    text-transform: uppercase; color: rgba(249,115,22,.9);
+    margin-bottom: 10px;
+}
+.policy-hero h1 {
+    font-size: clamp(1.7rem, 4vw, 2.4rem);
+    font-weight: 900; color: #fff;
+    margin-bottom: 10px; line-height: 1.2;
+}
+.policy-hero p { color: rgba(255,255,255,.65); font-size: .93rem; margin: 0; }
+.policy-meta {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,.1); border-radius: 20px;
+    padding: 5px 14px; margin-top: 16px;
+    font-size: .78rem; color: rgba(255,255,255,.7);
+}
+
+/* ── Two-column layout ───────────────────────────────────── */
+.policy-layout {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 40px;
+    align-items: start;
+    max-width: 1060px;
+    margin: 0 auto;
+    padding: 48px 20px 80px;
+}
+@media (max-width: 767px) {
+    .policy-layout { grid-template-columns: 1fr; padding: 24px 16px 60px; }
+}
+
+/* ── Sticky sidebar TOC ──────────────────────────────────── */
+.policy-toc {
+    position: sticky;
+    top: 80px;
+    background: #fff;
+    border-radius: 16px;
+    border: 1.5px solid var(--color-border, #e5e7eb);
+    padding: 20px 18px;
+    box-shadow: 0 2px 16px rgba(0,0,0,.06);
+}
+.policy-toc-title {
+    font-size: .7rem; font-weight: 800; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--color-text-muted, #6b7280);
+    margin-bottom: 14px; padding-bottom: 10px;
+    border-bottom: 1.5px solid var(--color-border, #e5e7eb);
+}
+.policy-toc a {
+    display: flex; align-items: flex-start; gap: 8px;
+    font-size: .8rem; font-weight: 600;
+    color: var(--color-text-muted, #6b7280);
+    text-decoration: none;
+    padding: 6px 8px; border-radius: 8px; line-height: 1.35;
+    transition: all .15s;
+    border-left: 2px solid transparent;
+}
+.policy-toc a:hover { background: #fef3ec; color: var(--color-primary, #f97316); }
+.policy-toc a.active {
+    background: #fef3ec; color: var(--color-primary, #f97316);
+    border-left-color: var(--color-primary, #f97316);
+    font-weight: 700;
+}
+.policy-toc-num {
+    flex-shrink: 0; width: 20px; height: 20px;
+    background: var(--color-primary, #f97316); color: #fff;
+    border-radius: 50%; font-size: .65rem; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+    margin-top: 1px;
+}
+.policy-toc a:hover .policy-toc-num,
+.policy-toc a.active .policy-toc-num { background: var(--color-primary-dark, #ea580c); }
+@media (max-width: 767px) { .policy-toc { position: static; } }
+
+/* ── Article content ─────────────────────────────────────── */
+.policy-article { min-width: 0; }
+.policy-section {
+    margin-bottom: 44px;
+    scroll-margin-top: 88px;
+}
+.policy-section-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 16px; padding-bottom: 12px;
+    border-bottom: 2px solid var(--color-bg, #fafaf9);
+}
+.policy-section-num {
+    width: 34px; height: 34px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--color-primary, #f97316), var(--color-primary-dark, #ea580c));
+    color: #fff; border-radius: 10px;
+    font-size: .85rem; font-weight: 900;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 3px 10px rgba(249,115,22,.3);
+}
+.policy-section h2 {
+    font-size: 1.15rem; font-weight: 800;
+    color: var(--color-text, #1a1a1a); margin: 0;
+}
+.policy-article p {
+    color: #4b5563; font-size: .93rem; line-height: 1.8;
+    margin-bottom: 12px;
+}
+.policy-article ul, .policy-article ol {
+    padding-left: 0; list-style: none; margin-bottom: 12px;
+}
+.policy-article li {
+    display: flex; gap: 10px; align-items: flex-start;
+    font-size: .92rem; color: #4b5563; line-height: 1.7;
+    margin-bottom: 8px;
+}
+.policy-article li::before {
+    content: '';
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--color-primary, #f97316);
+    flex-shrink: 0; margin-top: 7px;
+}
+.policy-ol li { counter-increment: policy-counter; }
+.policy-ol li::before {
+    content: counter(policy-counter);
+    background: #f3f4f6; color: #6b7280;
+    width: 20px; height: 20px; border-radius: 50%;
+    font-size: .7rem; font-weight: 800;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    margin-top: 3px;
+}
+.policy-ol { counter-reset: policy-counter; }
+.policy-callout {
+    background: #fef3ec; border-left: 4px solid var(--color-primary, #f97316);
+    border-radius: 0 12px 12px 0;
+    padding: 14px 18px; margin: 16px 0;
+    font-size: .89rem; color: #92400e; line-height: 1.7;
+}
+.policy-callout.blue {
+    background: #eff6ff; border-left-color: #3b82f6; color: #1e40af;
+}
+.policy-callout.green {
+    background: #ecfdf5; border-left-color: #10b981; color: #065f46;
+}
+.policy-tag {
+    display: inline-block; font-size: .65rem; font-weight: 800;
+    letter-spacing: .08em; text-transform: uppercase; padding: 2px 10px;
+    border-radius: 20px; margin-bottom: 10px;
+}
+.policy-tag.orange { background: #fef3ec; color: var(--color-primary, #f97316); }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{# ── Hero ── #}
+<div class="policy-hero">
+    <div class="container">
+        <div class="policy-hero-eyebrow"><i class="bi bi-file-earmark-text me-1"></i>Pháp lý</div>
+        <h1>Điều khoản sử dụng</h1>
+        <p>Vui lòng đọc kỹ trước khi sử dụng dịch vụ <strong class="text-white">{{ app_name }}</strong></p>
+        <div class="policy-meta">
+            <i class="bi bi-calendar3"></i> Cập nhật lần cuối: 05/04/2026
+        </div>
+    </div>
+</div>
+
+{# ── Body ── #}
+<div style="background:var(--color-bg,#fafaf9)">
+    <div class="policy-layout">
+
+        {# Sticky TOC #}
+        <aside class="policy-toc" id="policyToc">
+            <div class="policy-toc-title"><i class="bi bi-list-ul me-1"></i>Mục lục</div>
+            <nav>
+                <a href="#s1"><span class="policy-toc-num">1</span>Giới thiệu</a>
+                <a href="#s2"><span class="policy-toc-num">2</span>Trách nhiệm người dùng</a>
+                <a href="#s3"><span class="policy-toc-num">3</span>Quy tắc đăng tin</a>
+                <a href="#s4"><span class="policy-toc-num">4</span>Điều khoản thanh toán</a>
+                <a href="#s5"><span class="policy-toc-num">5</span>Chính sách đình chỉ</a>
+                <a href="#s6"><span class="policy-toc-num">6</span>Giới hạn trách nhiệm</a>
+            </nav>
+        </aside>
+
+        {# Article #}
+        <article class="policy-article">
+
+            {# 1 — Giới thiệu #}
+            <div class="policy-section" id="s1">
+                <div class="policy-section-header">
+                    <div class="policy-section-num">1</div>
+                    <h2>Giới thiệu</h2>
+                </div>
+                <span class="policy-tag orange">Tổng quan</span>
+                <p>
+                    Chào mừng bạn đến với <strong>{{ app_name }}</strong> — nền tảng kết nối chủ trọ và người tìm phòng
+                    tại Cần Thơ. Bằng việc truy cập và sử dụng website, bạn đồng ý tuân thủ toàn bộ các điều khoản
+                    được quy định trong tài liệu này.
+                </p>
+                <p>
+                    Chúng tôi có quyền cập nhật Điều khoản sử dụng bất kỳ lúc nào. Mọi thay đổi sẽ được thông báo
+                    trên website. Việc tiếp tục sử dụng dịch vụ sau khi thông báo được đăng tải đồng nghĩa với việc
+                    bạn chấp nhận các thay đổi đó.
+                </p>
+                <div class="policy-callout">
+                    <i class="bi bi-info-circle-fill me-2"></i>
+                    Dịch vụ này chỉ dành cho người dùng từ <strong>18 tuổi</strong> trở lên hoặc có sự đồng ý của
+                    người giám hộ hợp pháp.
+                </div>
+            </div>
+
+            {# 2 — Trách nhiệm người dùng #}
+            <div class="policy-section" id="s2">
+                <div class="policy-section-header">
+                    <div class="policy-section-num">2</div>
+                    <h2>Trách nhiệm của người dùng</h2>
+                </div>
+                <p>Khi sử dụng dịch vụ, bạn cam kết:</p>
+                <ul>
+                    <li>Cung cấp thông tin cá nhân chính xác, đầy đủ và cập nhật khi đăng ký tài khoản.</li>
+                    <li>Bảo mật thông tin đăng nhập và không chia sẻ tài khoản cho bên thứ ba.</li>
+                    <li>Không sử dụng dịch vụ vào các mục đích vi phạm pháp luật Việt Nam.</li>
+                    <li>Không can thiệp, phá hoại hoặc làm gián đoạn hoạt động của hệ thống.</li>
+                    <li>Tự chịu trách nhiệm về mọi nội dung bạn đăng tải lên nền tảng.</li>
+                    <li>Thông báo ngay cho chúng tôi nếu phát hiện hành vi lạm dụng hoặc truy cập trái phép.</li>
+                </ul>
+                <div class="policy-callout green">
+                    <i class="bi bi-shield-check-fill me-2"></i>
+                    Chúng tôi khuyến khích người dùng báo cáo các nội dung vi phạm qua email:
+                    <strong>support@phongtro.com</strong>
+                </div>
+            </div>
+
+            {# 3 — Quy tắc đăng tin #}
+            <div class="policy-section" id="s3">
+                <div class="policy-section-header">
+                    <div class="policy-section-num">3</div>
+                    <h2>Quy tắc đăng tin</h2>
+                </div>
+                <p>
+                    Mọi tin đăng phải phản ánh đúng thực tế bất động sản. Chúng tôi nghiêm cấm các hành vi sau:
+                </p>
+                <ul>
+                    <li>Đăng tin giả, thông tin sai lệch về địa chỉ, giá cả, tiện nghi hoặc diện tích phòng.</li>
+                    <li>Sao chép ảnh, nội dung của tin đăng khác mà không có sự cho phép.</li>
+                    <li>Đăng spam, đăng nhiều tin trùng lặp cho cùng một phòng/bất động sản.</li>
+                    <li>Sử dụng ngôn ngữ phân biệt đối xử, xúc phạm hoặc nội dung không phù hợp.</li>
+                    <li>Đăng tin quảng cáo dịch vụ không liên quan đến cho thuê phòng trọ.</li>
+                </ul>
+                <p>
+                    Tin đăng vi phạm sẽ bị xóa mà không cần thông báo trước. Tài khoản vi phạm nhiều lần
+                    có thể bị khóa vĩnh viễn.
+                </p>
+                <div class="policy-callout">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    Tất cả tin đăng phải trải qua quá trình xét duyệt trước khi hiển thị công khai.
+                    Thời gian xét duyệt thông thường từ <strong>2–24 giờ</strong>.
+                </div>
+            </div>
+
+            {# 4 — Điều khoản thanh toán #}
+            <div class="policy-section" id="s4">
+                <div class="policy-section-header">
+                    <div class="policy-section-num">4</div>
+                    <h2>Điều khoản thanh toán (Gói PRO)</h2>
+                </div>
+                <p>
+                    {{ app_name }} cung cấp gói dịch vụ nâng cấp <strong>PRO</strong> giúp tin đăng của chủ trọ
+                    được hiển thị ưu tiên, tăng lượt tiếp cận và mở khóa các tính năng cao cấp.
+                </p>
+                <ol class="policy-ol">
+                    <li>Mọi giao dịch thanh toán gói PRO được xử lý qua cổng thanh toán <strong>VNPay</strong> an toàn.</li>
+                    <li>Phí gói PRO không được hoàn lại sau khi thanh toán thành công, trừ trường hợp lỗi kỹ thuật từ hệ thống.</li>
+                    <li>Thời hạn gói PRO được tính kể từ ngày thanh toán thành công.</li>
+                    <li>Chúng tôi có quyền điều chỉnh giá các gói dịch vụ với thông báo trước 7 ngày.</li>
+                    <li>Nếu tài khoản bị đình chỉ do vi phạm điều khoản, phí PRO đã nộp sẽ không được hoàn trả.</li>
+                </ol>
+                <div class="policy-callout blue">
+                    <i class="bi bi-credit-card-fill me-2"></i>
+                    Để được hỗ trợ về thanh toán, vui lòng liên hệ: <strong>support@phongtro.com</strong>
+                    hoặc hotline <strong>0292 123 456</strong>.
+                </div>
+            </div>
+
+            {# 5 — Chính sách đình chỉ #}
+            <div class="policy-section" id="s5">
+                <div class="policy-section-header">
+                    <div class="policy-section-num">5</div>
+                    <h2>Chính sách đình chỉ tài khoản</h2>
+                </div>
+                <p>
+                    Chúng tôi có quyền tạm khóa hoặc xóa vĩnh viễn tài khoản trong các trường hợp sau:
+                </p>
+                <ul>
+                    <li>Vi phạm một hoặc nhiều điều khoản được quy định trong tài liệu này.</li>
+                    <li>Đăng nội dung lừa đảo, gian lận hoặc gây thiệt hại cho người dùng khác.</li>
+                    <li>Sử dụng hệ thống để thực hiện hành vi gian lận thanh toán.</li>
+                    <li>Bị cơ quan chức năng yêu cầu đình chỉ theo quy định pháp luật.</li>
+                    <li>Không hoạt động quá <strong>12 tháng</strong> liên tục (tài khoản ngủ đông).</li>
+                </ul>
+                <p>
+                    Người dùng bị đình chỉ có quyền khiếu nại trong vòng <strong>7 ngày</strong> kể từ ngày nhận
+                    thông báo bằng cách gửi email đến <strong>support@phongtro.com</strong>. Chúng tôi sẽ xem xét
+                    và phản hồi trong vòng 3–5 ngày làm việc.
+                </p>
+            </div>
+
+            {# 6 — Giới hạn trách nhiệm #}
+            <div class="policy-section" id="s6">
+                <div class="policy-section-header">
+                    <div class="policy-section-num">6</div>
+                    <h2>Giới hạn trách nhiệm</h2>
+                </div>
+                <p>
+                    {{ app_name }} hoạt động như một nền tảng kết nối trung gian. Chúng tôi <strong>không</strong>
+                    chịu trách nhiệm đối với:
+                </p>
+                <ul>
+                    <li>Tính chính xác của thông tin do người dùng tự đăng tải.</li>
+                    <li>Mọi tranh chấp phát sinh giữa chủ trọ và người thuê phòng.</li>
+                    <li>Thiệt hại gián tiếp hoặc hậu quả phát sinh từ việc sử dụng dịch vụ.</li>
+                    <li>Gián đoạn dịch vụ do lý do kỹ thuật nằm ngoài tầm kiểm soát của chúng tôi.</li>
+                    <li>Nội dung của các trang web bên thứ ba được liên kết từ nền tảng này.</li>
+                </ul>
+                <div class="policy-callout">
+                    <i class="bi bi-question-circle-fill me-2"></i>
+                    Nếu bạn có câu hỏi về Điều khoản sử dụng, vui lòng liên hệ chúng tôi qua
+                    <a href="mailto:support@phongtro.com" class="fw-700">support@phongtro.com</a>
+                </div>
+
+                {# Related links #}
+                <div class="d-flex gap-3 flex-wrap mt-4 pt-4" style="border-top:1.5px solid var(--color-border,#e5e7eb)">
+                    <a href="{{ route('/privacy') }}" class="btn btn-outline-primary fw-700 rounded-pill">
+                        <i class="bi bi-shield-lock me-2"></i>Chính sách bảo mật
+                    </a>
+                    <a href="{{ route('/') }}" class="btn btn-outline-secondary fw-700 rounded-pill">
+                        <i class="bi bi-house me-2"></i>Về trang chủ
+                    </a>
+                </div>
+            </div>
+
+        </article>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    var sections = document.querySelectorAll('.policy-section');
+    var tocLinks = document.querySelectorAll('#policyToc a');
+    if (!sections.length || !tocLinks.length) return;
+
+    function setActive() {
+        var scrollY = window.scrollY + 120;
+        var current = '';
+        sections.forEach(function (s) {
+            if (s.offsetTop <= scrollY) current = s.id;
+        });
+        tocLinks.forEach(function (a) {
+            a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+        });
+    }
+
+    window.addEventListener('scroll', setActive, { passive: true });
+    setActive();
+
+    // Smooth scroll
+    tocLinks.forEach(function (a) {
+        a.addEventListener('click', function (e) {
+            e.preventDefault();
+            var target = document.querySelector(this.getAttribute('href'));
+            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    });
+})();
+</script>
+{% endblock %}

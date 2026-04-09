@@ -1,0 +1,108 @@
+{% extends 'layouts/base.twig' %}
+{% block title %}Xác nhận đăng tin{% endblock %}
+
+{% block content %}
+{% set is_composite = property.type in ['boarding_house','dormitory','homestay'] %}
+{% set type_labels = {
+    'boarding_house': 'Nhà trọ',
+    'dormitory':      'KTX',
+    'homestay':       'Homestay',
+    'mini_house':     'Căn hộ Mini',
+    'full_house':     'Nhà nguyên căn'
+} %}
+
+<div class="container py-4" style="max-width:700px">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="fw-800 mb-1"><i class="bi bi-megaphone me-2"></i>Xác nhận đăng tin</h4>
+            <p class="text-muted mb-0 small">Kiểm tra thông tin trước khi gửi</p>
+        </div>
+        <a href="{{ route('/post') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Quay lại
+        </a>
+    </div>
+
+    {% if existing %}
+        <div class="alert alert-warning mb-4">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            BĐS này đã có bài đăng đang hoạt động (ID: #{{ existing.id }}).
+            Đăng mới sẽ thay thế bài cũ.
+        </div>
+    {% endif %}
+
+    {# Property summary card #}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-3">
+            <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                <span class="badge bg-secondary">{{ type_labels[property.type] ?? property.type }}</span>
+                <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Đã duyệt</span>
+            </div>
+            <h5 class="fw-700 mb-1">{{ property.name }}</h5>
+            <p class="text-muted small mb-2">
+                <i class="bi bi-geo-alt text-primary me-1"></i>{{ property.address }}
+            </p>
+            {% if is_composite %}
+                {% if property.min_display_price %}
+                    <div class="fw-700 text-primary">
+                        {{ property.min_display_price|money }}
+                        {% if property.max_display_price and property.max_display_price != property.min_display_price %}
+                            — {{ property.max_display_price|money }}
+                        {% endif %}
+                        <small class="text-muted fw-400">/tháng</small>
+                    </div>
+                {% endif %}
+                <div class="small text-muted">
+                    <i class="bi bi-door-closed me-1"></i>{{ property.room_count|default(0) }} phòng
+                </div>
+            {% else %}
+                {% if property.price %}
+                    <div class="fw-700 text-primary">
+                        {{ property.price|money }} <small class="text-muted fw-400">/tháng</small>
+                    </div>
+                {% endif %}
+                {% if property.area %}
+                    <div class="small text-muted">
+                        <i class="bi bi-arrows-angle-expand me-1"></i>{{ property.area }} m²
+                    </div>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+
+    {# Posting form #}
+    <form method="POST" action="{{ route('/post/store') }}">
+        <input type="hidden" name="_csrf" value="{{ csrf }}">
+        <input type="hidden" name="property_id" value="{{ property.id }}">
+
+        <div class="mb-3">
+            <label class="form-label fw-600">Tiêu đề bài đăng
+                <span class="text-muted fw-400 small">(tùy chọn)</span>
+            </label>
+            <input type="text" name="title" class="form-control"
+                   placeholder="Mặc định: Bài đăng {{ property.name }}"
+                   maxlength="255">
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label fw-600">Mô tả
+                <span class="text-muted fw-400 small">(tùy chọn — mặc định lấy mô tả BĐS)</span>
+            </label>
+            <textarea name="description" rows="4" class="form-control"
+                      placeholder="Nhập mô tả thêm hoặc để trống...">{{ property.description }}</textarea>
+        </div>
+
+        <div class="d-flex gap-2 flex-wrap">
+            <button type="submit" class="btn btn-success fw-600">
+                <i class="bi bi-megaphone me-1"></i>Xác nhận đăng tin
+            </button>
+            <a href="{{ route('/blocks/' ~ property.id ~ '/edit') }}"
+               class="btn btn-outline-secondary">
+                <i class="bi bi-pencil me-1"></i>Chỉnh sửa BĐS
+            </a>
+        </div>
+        <p class="text-muted small mt-3">
+            <i class="bi bi-info-circle me-1"></i>Bài đăng sẽ chờ admin phê duyệt trước khi hiển thị công khai.
+        </p>
+    </form>
+</div>
+{% endblock %}

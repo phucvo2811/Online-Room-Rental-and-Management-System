@@ -1,0 +1,613 @@
+{% extends 'layouts/base.twig' %}
+{% block title %}{{ mode == 'edit' ? 'Chỉnh sửa bất động sản' : 'Tạo bất động sản mới' }}{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+<style>
+/* ─── Wizard shell ─────────────────────────────────── */
+.bwiz-wrap { max-width: 780px; margin: 0 auto; }
+.bwiz-header {
+    background: linear-gradient(135deg,var(--color-primary) 0%,var(--color-primary-dark,#c25a10) 100%);
+    border-radius: 18px 18px 0 0; padding: 32px 36px 24px;
+}
+.bwiz-title { color:#fff; font-size:1.45rem; font-weight:900; margin-bottom:4px; }
+.bwiz-sub   { color:rgba(255,255,255,.65); font-size:.85rem; margin-bottom:28px; }
+
+/* Steps bar */
+.bwiz-steps { display:flex; gap:0; }
+.bwiz-step  {
+    flex:1; display:flex; flex-direction:column; align-items:center;
+    position:relative; cursor:default;
+}
+.bwiz-step + .bwiz-step::before {
+    content:''; position:absolute; top:17px; right:50%; width:100%;
+    height:2px; background:rgba(255,255,255,.3);
+}
+.bwiz-step.done + .bwiz-step::before { background:rgba(255,255,255,.7); }
+.step-circle {
+    width:36px; height:36px; border-radius:50%;
+    background:rgba(255,255,255,.25); color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-size:.9rem; font-weight:800; position:relative; z-index:1;
+    border:2px solid rgba(255,255,255,.4); transition:all .25s;
+}
+.bwiz-step.active .step-circle { background:#fff; color:var(--color-primary); border-color:#fff; }
+.bwiz-step.done   .step-circle { background:#fff; color:var(--color-primary); border-color:#fff; }
+.step-lbl { color:rgba(255,255,255,.7); font-size:.7rem; font-weight:600; margin-top:6px; text-align:center; }
+.bwiz-step.active .step-lbl { color:#fff; }
+.bwiz-step.done   .step-lbl { color:rgba(255,255,255,.85); }
+
+/* Body */
+.bwiz-body { background:#fff; border-radius:0 0 18px 18px; padding:32px 36px 28px; box-shadow:0 8px 40px rgba(0,0,0,.1); }
+@media(max-width:576px){ .bwiz-header{ padding:24px 20px 20px; } .bwiz-body{ padding:22px 16px 20px; } }
+
+/* Section header */
+.fs-label { font-size:.7rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--color-text-light,#888); margin-bottom:18px;
+    display:flex; align-items:center; gap:8px; }
+.fs-label::after { content:''; flex:1; height:1px; background:var(--color-border,#e8e8e8); }
+
+/* Step panels */
+.bwiz-panel { display:none; }
+.bwiz-panel.active { display:block; }
+
+/* Navigation */
+.bwiz-nav { display:flex; justify-content:space-between; align-items:center; margin-top:28px; padding-top:20px; border-top:1.5px solid var(--color-border,#e8e8e8); }
+
+/* Image upload */
+.img-upload-grid {
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(136px,1fr)); gap:12px; margin-top:12px;
+}
+.img-slot {
+    aspect-ratio:4/3; border-radius:12px; overflow:hidden; position:relative;
+    border:2.5px dashed var(--color-border,#ddd); background:linear-gradient(135deg,#fafaf9,#f0f9ff);
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    transition:all .22s; box-shadow:0 2px 8px rgba(0,0,0,.05);
+}
+.img-slot:hover { border-color:var(--color-primary,#f97316); background:linear-gradient(135deg,#fff7ed,#fffbf5); box-shadow:0 4px 14px rgba(249,115,22,.12); }
+.img-slot img { width:100%; height:100%; object-fit:cover; display:block; }
+.img-slot .img-remove {
+    position:absolute; top:6px; right:6px;
+    background:rgba(0,0,0,.62); color:#fff; border:none; border-radius:50%;
+    width:26px; height:26px; font-size:13px; line-height:1; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition:background .18s; box-shadow:0 2px 6px rgba(0,0,0,.25);
+}
+.img-slot .img-remove:hover { background:rgba(239,68,68,.9); }
+.img-slot .img-add-icon { color:#c4b5b5; font-size:2.2rem; pointer-events:none; }
+.img-primary-badge {
+    position:absolute; bottom:0; left:0; right:0;
+    background:linear-gradient(to top, rgba(249,115,22,.92), transparent);
+    color:#fff; font-size:.68rem; font-weight:800; padding:18px 8px 5px;
+    text-align:center; letter-spacing:.03em;
+}
+
+/* Amenity chips */
+.amenity-check-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:10px; }
+.amenity-chip-check { display:flex; align-items:center; gap:10px; padding:10px 14px;
+    border:1.5px solid var(--color-border,#e8e8e8); border-radius:10px; cursor:pointer;
+    transition:all .18s; user-select:none; }
+.amenity-chip-check:hover { border-color:var(--color-primary,#f97316); background:#fff7ed; }
+.amenity-chip-check.checked { border-color:var(--color-primary,#f97316); background:#fff7ed; }
+.amenity-chip-check input { display:none; }
+.amenity-chip-check .aci { font-size:1.1rem; }
+.amenity-chip-check .acl { font-size:.83rem; font-weight:600; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-light py-3 border-bottom">
+    <div class="container">
+        <ol class="breadcrumb mb-0 small">
+            <li class="breadcrumb-item"><a href="{{ route('/') }}">Trang chủ</a></li>
+            <li class="breadcrumb-item"><a href="{{ route('/my-blocks') }}">Bất động sản của tôi</a></li>
+            <li class="breadcrumb-item active">{{ mode == 'edit' ? 'Chỉnh sửa' : 'Tạo mới' }}</li>
+        </ol>
+    </div>
+</div>
+
+<div class="container py-4">
+<div class="bwiz-wrap">
+
+    {# ── Header + Steps ── #}
+    <div class="bwiz-header">
+        <div class="bwiz-title">
+            <i class="bi bi-building-add me-2"></i>
+            {{ mode == 'edit' ? 'Chỉnh sửa bất động sản' : 'Đăng bất động sản mới' }}
+        </div>
+        <div class="bwiz-sub">Điền đầy đủ để BĐS được duyệt nhanh hơn</div>
+        <div class="bwiz-steps" id="wizSteps">
+            {% for i, label in ['Cơ bản', 'Tiện ích & Giá', 'Chi tiết', 'Hình ảnh'] %}
+                <div class="bwiz-step {{ i == 0 ? 'active' : '' }}" id="stepNav{{ i + 1 }}">
+                    <div class="step-circle" id="stepCircle{{ i + 1 }}">{{ i + 1 }}</div>
+                    <div class="step-lbl">{{ label }}</div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    {# ── Form ── #}
+    <div class="bwiz-body">
+
+        {% if errors is not empty %}
+        <div class="alert alert-danger mb-3">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+            <strong>Vui lòng kiểm tra lại:</strong>
+            <ul class="mb-0 mt-1">
+                {% for field, msg in errors %}
+                    <li>{{ msg }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <form action="{{ mode == 'edit' ? route('/blocks/' ~ block.id ~ '/edit') : route('/blocks/create') }}"
+              method="POST" enctype="multipart/form-data" id="blockForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf }}">
+
+            {# ════════════════ STEP 1: Thông tin cơ bản ════════════════ #}
+            <div class="bwiz-panel active" id="bStep1">
+                <div class="fs-label"><i class="bi bi-info-circle-fill text-primary"></i>Thông tin cơ bản</div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-600">Tên bất động sản <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control {{ errors.name is defined ? 'is-invalid' : '' }}"
+                           name="name" value="{{ block.name|default('') }}" required
+                           placeholder="VD: Nhà trọ Nguyễn Văn Cừ – Ninh Kiều">
+                    {% if errors.name is defined %}<div class="invalid-feedback">{{ errors.name }}</div>{% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-600">Loại bất động sản <span class="text-danger">*</span></label>
+                    <select class="form-select {{ errors.type is defined ? 'is-invalid' : '' }}"
+                            name="type" id="propertyType" onchange="onTypeChange()" required>
+                        <option value="">-- Chọn loại --</option>
+                        <optgroup label="Nhiều phòng (nhập khoảng giá)">
+                            <option value="boarding_house" {{ block.type == 'boarding_house' ? 'selected' : '' }}>🏠 Nhà trọ</option>
+                            <option value="dormitory"      {{ block.type == 'dormitory'      ? 'selected' : '' }}>🏫 Ký túc xá</option>
+                            <option value="homestay"       {{ block.type == 'homestay'       ? 'selected' : '' }}>🏡 Homestay</option>
+                        </optgroup>
+                        <optgroup label="Một đơn vị (nhập giá & diện tích cụ thể)">
+                            <option value="mini_house"     {{ block.type == 'mini_house'     ? 'selected' : '' }}>🛋️ Căn hộ Mini</option>
+                            <option value="full_house"     {{ block.type == 'full_house'     ? 'selected' : '' }}>🏘️ Nhà nguyên căn</option>
+                        </optgroup>
+                    </select>
+                    {% if errors.type is defined %}<div class="invalid-feedback">{{ errors.type }}</div>{% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-600">Địa chỉ <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control {{ errors.address is defined ? 'is-invalid' : '' }}"
+                           name="address" value="{{ block.address|default('') }}" required
+                           placeholder="VD: 45 Trần Phú, Phường An Lạc">
+                    {% if errors.address is defined %}<div class="invalid-feedback">{{ errors.address }}</div>{% endif %}
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-600">Khu vực</label>
+                        <select class="form-select" name="district_id" id="districtSelect" onchange="onDistrictChange()">
+                            <option value="">-- Chọn --</option>
+                            {% for d in districts %}
+                                <option value="{{ d.id }}" {{ block.district_id == d.id ? 'selected' : '' }}>{{ d.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-600">Phường / Xã</label>
+                        <select class="form-select" name="ward_id" id="wardSelect" onchange="onWardChange()"
+                                {{ block.district_id is empty ? 'disabled' : '' }}>
+                            {% if wards is not empty %}
+                                <option value="">-- Chọn --</option>
+                                {% for w in wards %}
+                                    <option value="{{ w.id }}" {{ block.ward_id == w.id ? 'selected' : '' }}>{{ w.name }}</option>
+                                {% endfor %}
+                            {% else %}
+                                <option value="">-- Chọn khu vực trước --</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-600">Đường phố</label>
+                        <select class="form-select" name="street_id" id="streetSelect"
+                                {{ block.ward_id is empty ? 'disabled' : '' }}>
+                            {% if streets is not empty %}
+                                <option value="">-- Chọn --</option>
+                                {% for s in streets %}
+                                    <option value="{{ s.id }}" {{ block.street_id == s.id ? 'selected' : '' }}>{{ s.name }}</option>
+                                {% endfor %}
+                            {% else %}
+                                <option value="">-- Chọn phường trước --</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <label class="form-label fw-600">Mô tả chi tiết</label>
+                    <textarea class="form-control" name="description" rows="4"
+                              placeholder="Mô tả về tiện ích, khu vực xung quanh, ưu điểm nổi bật...">{{ block.description|default('') }}</textarea>
+                </div>
+
+                {# ── Map Picker ──────────────────────────────────────────── #}
+                <div class="mt-4">
+                    <label class="form-label fw-600">
+                        <i class="bi bi-geo-alt-fill text-primary me-1"></i>
+                        Vị trí trên bản đồ <span class="text-danger">*</span>
+                    </label>
+                    {% include 'components/map-picker.twig' with {
+                        lat:     block.latitude  ?? null,
+                        lng:     block.longitude ?? null,
+                        address: block.map_address ?? null
+                    } %}
+                    {% if errors.location is defined %}
+                        <div class="text-danger small mt-1">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i>{{ errors.location }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {# ════════════════ STEP 2: Tiện ích & Giá ════════════════ #}
+            <div class="bwiz-panel" id="bStep2">
+                <div class="fs-label"><i class="bi bi-stars text-warning"></i>Tiện ích</div>
+                <div class="amenity-check-grid mb-4">
+                    {% set amenities = [
+                        { name: 'has_wifi',      icon: 'bi-wifi',       label: 'WiFi miễn phí', val: block.has_wifi },
+                        { name: 'has_ac',        icon: 'bi-snow2',      label: 'Máy lạnh',       val: block.has_ac },
+                        { name: 'has_parking',   icon: 'bi-car-front',  label: 'Chỗ đậu xe',     val: block.has_parking },
+                        { name: 'allow_pet',     icon: 'bi-heart-fill', label: 'Nuôi thú cưng',  val: block.allow_pet },
+                        { name: 'allow_cooking', icon: 'bi-fire',       label: 'Nấu ăn',         val: block.allow_cooking }
+                    ] %}
+                    {% for am in amenities %}
+                    <label class="amenity-chip-check {{ am.val ? 'checked' : '' }}" onclick="toggleChip(this)">
+                        <input type="checkbox" name="{{ am.name }}" value="1" {{ am.val ? 'checked' : '' }}>
+                        <span class="aci"><i class="bi {{ am.icon }}"></i></span>
+                        <span class="acl">{{ am.label }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+
+                <div class="fs-label"><i class="bi bi-currency-dollar text-success"></i>Giá thuê</div>
+
+                {# GROUP 1: composite – price range #}
+                <div id="priceComposite">
+                    <div class="alert alert-info small py-2 mb-3">
+                        <i class="bi bi-info-circle me-1"></i>Nhà trọ / KTX / Homestay: nhập khoảng giá. Giá mỗi phòng cụ thể sẽ nhập khi tạo phòng.
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-600">Giá thấp nhất (đ/tháng)</label>
+                            <input type="number" step="1000" class="form-control {{ errors.price_min is defined ? 'is-invalid' : '' }}"
+                                   name="price_min" value="{{ block.price_min|default('') }}" placeholder="VD: 1500000">
+                            {% if errors.price_min is defined %}<div class="invalid-feedback">{{ errors.price_min }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-600">Giá cao nhất (đ/tháng)</label>
+                            <input type="number" step="1000" class="form-control {{ errors.price_max is defined ? 'is-invalid' : '' }}"
+                                   name="price_max" value="{{ block.price_max|default('') }}" placeholder="VD: 3500000">
+                            {% if errors.price_max is defined %}<div class="invalid-feedback">{{ errors.price_max }}</div>{% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                {# GROUP 2: single – exact price + area #}
+                <div id="priceSingle" style="display:none;">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-600">Giá thuê (đ/tháng) <span class="text-danger">*</span></label>
+                            <input type="number" step="1000" class="form-control {{ errors.price is defined ? 'is-invalid' : '' }}"
+                                   name="price" value="{{ block.price|default('') }}" placeholder="VD: 5000000">
+                            {% if errors.price is defined %}<div class="invalid-feedback">{{ errors.price }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-600">Diện tích (m²) <span class="text-danger">*</span></label>
+                            <input type="number" step="1" class="form-control {{ errors.area is defined ? 'is-invalid' : '' }}"
+                                   name="area" value="{{ block.area|default('') }}" placeholder="VD: 60">
+                            {% if errors.area is defined %}<div class="invalid-feedback">{{ errors.area }}</div>{% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fs-label mt-4"><i class="bi bi-lightning-charge-fill text-warning"></i>Chi phí phát sinh</div>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-600">Giá điện (đ/kWh)</label>
+                        <input type="number" step="100" class="form-control"
+                               name="electric_price" value="{{ block.electric_price|default('') }}" placeholder="VD: 3500">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-600">Giá nước (đ/m³)</label>
+                        <input type="number" step="100" class="form-control"
+                               name="water_price" value="{{ block.water_price|default('') }}" placeholder="VD: 15000">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-600">Internet (đ/tháng)</label>
+                        <input type="number" step="1000" class="form-control"
+                               name="internet_price" value="{{ block.internet_price|default('') }}" placeholder="VD: 100000">
+                    </div>
+                </div>
+            </div>
+
+            {# ════════════════ STEP 3: Chi tiết bổ sung ════════════════ #}
+            <div class="bwiz-panel" id="bStep3">
+                <div class="fs-label"><i class="bi bi-clipboard2-data-fill text-info"></i>Thông tin bổ sung</div>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-600">Số tháng đặt cọc</label>
+                        <input type="number" step="1" min="0" class="form-control"
+                               name="deposit_months" value="{{ block.deposit_months|default(1) }}" placeholder="VD: 2">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-600">Tầng</label>
+                        <input type="number" step="1" min="1" class="form-control"
+                               name="floor" value="{{ block.floor|default('') }}" placeholder="VD: 2">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-600">Số người tối đa</label>
+                        <input type="number" step="1" min="1" class="form-control"
+                               name="max_people" value="{{ block.max_people|default('') }}" placeholder="VD: 4">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-600">Phòng ngủ</label>
+                        <input type="number" step="1" min="0" class="form-control"
+                               name="num_bedrooms" value="{{ block.num_bedrooms|default('') }}" placeholder="VD: 2">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-600">Phòng tắm / WC</label>
+                        <input type="number" step="1" min="0" class="form-control"
+                               name="num_bathrooms" value="{{ block.num_bathrooms|default('') }}" placeholder="VD: 1">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-600">SĐT liên hệ <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control {{ errors.contact_phone is defined ? 'is-invalid' : '' }}"
+                               name="contact_phone" value="{{ block.contact_phone|default('') }}" placeholder="VD: 0901234567" required>
+                        {% if errors.contact_phone is defined %}
+                            <div class="invalid-feedback">{{ errors.contact_phone }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if mode == 'edit' %}
+                <div class="alert alert-{{ block.status == 'approved' ? 'success' : (block.status == 'rejected' ? 'danger' : 'warning') }} mt-4 mb-0 small">
+                    {% if block.status == 'approved' %}
+                        <i class="bi bi-check-circle-fill me-1"></i><strong>Đã duyệt</strong> — Bạn có thể đăng bài ngay.
+                    {% elseif block.status == 'rejected' %}
+                        <i class="bi bi-x-circle-fill me-1"></i><strong>Bị từ chối</strong> — Vui lòng chỉnh sửa và gửi lại.
+                    {% else %}
+                        <i class="bi bi-clock-fill me-1"></i><strong>Chờ duyệt</strong> — Admin đang xem xét.
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+
+            {# ════════════════ STEP 4: Hình ảnh ════════════════ #}
+            <div class="bwiz-panel" id="bStep4">
+                <div class="fs-label"><i class="bi bi-images text-primary"></i>Hình ảnh (tối đa 10 ảnh · mỗi ảnh &lt; 5 MB)</div>
+
+                {% if mode == 'edit' and blockImages is not empty %}
+                <div class="mb-4">
+                    <div class="small text-muted mb-2">
+                        <i class="bi bi-info-circle me-1"></i>Ảnh hiện tại. Nếu bạn tải lên ảnh mới, toàn bộ ảnh cũ sẽ được thay thế.
+                    </div>
+                    <div class="img-upload-grid">
+                        {% for img in blockImages %}
+                        <div class="img-slot" style="cursor:default;">
+                            <img src="{{ upload_url ~ img.image_path }}" alt="">
+                            {% if img.is_primary %}<span class="img-primary-badge">Ảnh chính</span>{% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="img-upload-grid" id="imgPreviewGrid"></div>
+
+                <div class="mt-3 d-flex align-items-center gap-3 flex-wrap">
+                    <label class="btn btn-primary" for="imgFileInput" style="border-radius:10px;">
+                        <i class="bi bi-cloud-arrow-up-fill me-2"></i>Chọn ảnh
+                    </label>
+                    <input type="file" id="imgFileInput" name="images[]"
+                           accept="image/jpeg,image/png,image/webp,image/gif"
+                           multiple style="display:none;" onchange="onImagesSelected(this)">
+                    <span class="text-muted small" id="imgCountLabel">0 / 10 ảnh đã chọn</span>
+                </div>
+
+                <div class="alert alert-warning small mt-3 py-2 mb-0" style="border-radius:10px;">
+                    <i class="bi bi-star-fill text-warning me-1"></i>
+                    <strong>Ảnh đầu tiên</strong> sẽ là ảnh bìa hiển thị trong danh sách tìm kiếm. Hỗ trợ JPG, PNG, WebP.
+                </div>
+            </div>
+
+            {# ── Navigation buttons ── #}
+            <div class="bwiz-nav">
+                <button type="button" class="btn btn-outline-secondary" id="btnPrev"
+                        onclick="wizPrev()" style="display:none;">
+                    <i class="bi bi-arrow-left me-1"></i>Quay lại
+                </button>
+                <div id="wizNavSpacer"></div>
+                <button type="button" class="btn btn-primary fw-700" id="btnNext" onclick="wizNext()">
+                    Tiếp theo <i class="bi bi-arrow-right ms-1"></i>
+                </button>
+                <button type="submit" class="btn btn-success fw-700" id="btnSubmit" style="display:none;">
+                    <i class="bi bi-check-lg me-1"></i>
+                    {{ mode == 'edit' ? 'Cập nhật BĐS' : 'Tạo BĐS' }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+</div>
+
+<script>
+// ─── Wizard ────────────────────────────────────────────────────────────────
+var currentStep = 1;
+var totalSteps  = 4;
+
+function wizUpdateNav() {
+    document.getElementById('btnPrev').style.display   = currentStep > 1 ? '' : 'none';
+    document.getElementById('btnNext').style.display   = currentStep < totalSteps ? '' : 'none';
+    document.getElementById('btnSubmit').style.display = currentStep === totalSteps ? '' : 'none';
+    document.getElementById('wizNavSpacer').style.display = currentStep === 1 ? '' : 'none';
+}
+
+function wizActivate(step) {
+    document.getElementById('bStep' + currentStep).classList.remove('active');
+    document.getElementById('stepNav' + currentStep).classList.remove('active', 'done');
+    if (step > currentStep) {
+        document.getElementById('stepNav' + currentStep).classList.add('done');
+        document.getElementById('stepCircle' + currentStep).innerHTML =
+            '<i class="bi bi-check-lg" style="font-size:.85rem;"></i>';
+    } else {
+        document.getElementById('stepCircle' + currentStep).innerHTML = currentStep;
+    }
+    currentStep = step;
+    document.getElementById('bStep' + currentStep).classList.add('active');
+    document.getElementById('stepNav' + currentStep).classList.add('active');
+    document.getElementById('stepCircle' + currentStep).innerHTML = currentStep;
+    wizUpdateNav();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function wizValidateStep1() {
+    var ok = true;
+    ['name', 'type', 'address'].forEach(function(f) {
+        var el = f === 'type'
+            ? document.getElementById('propertyType')
+            : document.querySelector('[name="' + f + '"]');
+        if (!el) return;
+        if (!el.value.trim()) { el.classList.add('is-invalid'); ok = false; }
+        else el.classList.remove('is-invalid');
+    });
+    /* Validate map location */
+    if (!validateMapPicker()) { ok = false; }
+    return ok;
+}
+
+function wizNext() {
+    if (currentStep === 1 && !wizValidateStep1()) return;
+    if (currentStep < totalSteps) wizActivate(currentStep + 1);
+}
+function wizPrev() {
+    if (currentStep > 1) wizActivate(currentStep - 1);
+}
+
+// ─── Type: show correct price section ─────────────────────────────────────
+function onTypeChange() {
+    var val = document.getElementById('propertyType').value;
+    var composite = ['boarding_house', 'dormitory', 'homestay'].includes(val);
+    document.getElementById('priceComposite').style.display = composite        ? '' : 'none';
+    document.getElementById('priceSingle').style.display    = (!composite && val) ? '' : 'none';
+}
+
+// ─── Amenity chip toggle ───────────────────────────────────────────────────
+function toggleChip(label) {
+    var cb = label.querySelector('input[type=checkbox]');
+    cb.checked = !cb.checked;
+    label.classList.toggle('checked', cb.checked);
+}
+
+// ─── Location cascade ─────────────────────────────────────────────────────
+async function onDistrictChange() {
+    var dId = document.getElementById('districtSelect').value;
+    var ws  = document.getElementById('wardSelect');
+    var ss  = document.getElementById('streetSelect');
+    ws.innerHTML = '<option value="">-- Chọn quận/huyện trước --</option>';
+    ss.innerHTML = '<option value="">-- Chọn phường/xã trước --</option>';
+    ws.disabled = ss.disabled = true;
+    if (!dId) return;
+    try {
+        var r = await fetch('{{ route("/api/wards") }}?district_id=' + dId);
+        var data = await r.json();
+        ws.innerHTML = '<option value="">-- Chọn phường/xã --</option>';
+        data.forEach(function(w) {
+            var o = document.createElement('option');
+            o.value = w.id; o.textContent = w.name; ws.appendChild(o);
+        });
+        ws.disabled = false;
+    } catch(e) { console.error(e); }
+}
+
+async function onWardChange() {
+    var wId = document.getElementById('wardSelect').value;
+    var ss  = document.getElementById('streetSelect');
+    ss.innerHTML = '<option value="">-- Chọn phường/xã trước --</option>';
+    ss.disabled = true;
+    if (!wId) return;
+    try {
+        var r = await fetch('{{ route("/api/streets") }}?ward_id=' + wId);
+        var data = await r.json();
+        ss.innerHTML = '<option value="">-- Chọn đường phố --</option>';
+        data.forEach(function(s) {
+            var o = document.createElement('option');
+            o.value = s.id; o.textContent = s.name; ss.appendChild(o);
+        });
+        ss.disabled = false;
+    } catch(e) { console.error(e); }
+}
+
+// ─── Image upload preview ─────────────────────────────────────────────────
+var selectedFiles = [];
+
+function onImagesSelected(input) {
+    var newFiles = Array.from(input.files);
+    selectedFiles = selectedFiles.concat(newFiles).slice(0, 10);
+    input.value = ''; // Reset so same file can re-trigger
+    renderPreviews();
+    rebuildFileInput();
+}
+
+function renderPreviews() {
+    var grid = document.getElementById('imgPreviewGrid');
+    grid.innerHTML = '';
+    selectedFiles.forEach(function(file, idx) {
+        var slot = document.createElement('div');
+        slot.className = 'img-slot';
+
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var img = document.createElement('img');
+            img.src = e.target.result;
+            slot.appendChild(img);
+
+            if (idx === 0) {
+                var badge = document.createElement('span');
+                badge.className = 'img-primary-badge';
+                badge.textContent = 'Ảnh chính';
+                slot.appendChild(badge);
+            }
+        };
+        reader.readAsDataURL(file);
+
+        var btn = document.createElement('button');
+        btn.type = 'button'; btn.className = 'img-remove'; btn.innerHTML = '&times;';
+        btn.addEventListener('click', function() {
+            selectedFiles.splice(idx, 1);
+            renderPreviews();
+            rebuildFileInput();
+        });
+        slot.appendChild(btn);
+        grid.appendChild(slot);
+    });
+    document.getElementById('imgCountLabel').textContent = selectedFiles.length + ' / 10 ảnh đã chọn';
+}
+
+function rebuildFileInput() {
+    if (!window.DataTransfer) return;
+    var dt = new DataTransfer();
+    selectedFiles.forEach(function(f) { dt.items.add(f); });
+    document.getElementById('imgFileInput').files = dt.files;
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+    onTypeChange();
+    wizUpdateNav();
+});
+</script>
+
+{# ── Leaflet (OpenStreetMap — no API key required) ───────────────────── #}
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="{{ asset('js/map-picker.js') }}"></script>
+
+{% endblock %}

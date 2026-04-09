@@ -1,0 +1,13 @@
+{#
+  filter-chip.twig — Reusable active filter tag/chip
+  Usage: {% include 'components/filter-chip.twig' with { label: 'Nhà trọ', key: 'type' } %}
+  Params:
+    label  (string) — display text e.g. 'Nhà trọ'
+    key    (string) — filter key for removal e.g. 'type'
+#}
+<span class="ftag" data-key="{{ key }}">
+    {{ label }}
+    <button type="button" class="ftag-x" aria-label="Xoá bộ lọc {{ label }}" onclick="fbarRemoveTagSSR('{{ key }}')">
+        <i class="bi bi-x"></i>
+    </button>
+</span>

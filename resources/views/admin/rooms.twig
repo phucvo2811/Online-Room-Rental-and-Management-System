@@ -63,7 +63,12 @@
                                 <div class="text-muted">{{ r.landlord_phone }}</div>
                             </td>
                             <td class="fw-700 text-primary small">{{ r.price|money }}</td>
-                            <td><span class="status-badge {{ r.status }}">{{ si.label }}</span></td>
+                            <td>
+                                <span class="status-badge {{ r.status }}">{{ si.label }}</span>
+                                {% if r.is_spam %}
+                                    <span class="badge bg-warning text-dark ms-2">Nghi spam</span>
+                                {% endif %}
+                            </td>
                             <td class="small text-muted">{{ r.created_at|date('d/m/Y') }}</td>
                             <td>
                                 <div class="d-flex gap-1 flex-wrap">
@@ -85,6 +90,11 @@
                                             <i class="bi bi-x-lg"></i>
                                         </button>
                                     {% endif %}
+                                    <form action="{{ route('/admin/rooms/' ~ r.id ~ '/hide') }}" method="POST" class="d-inline">
+                                        <button class="btn btn-sm btn-outline-secondary py-0 px-2">
+                                            <i class="bi bi-eye-slash"></i>
+                                        </button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>

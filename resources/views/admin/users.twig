@@ -43,16 +43,29 @@
                         </td>
                         <td class="small text-muted">{{ u.created_at|date('d/m/Y') }}</td>
                         <td>
+                            <a href="{{ route('/admin/users/' ~ u.id) }}" class="btn btn-sm btn-outline-secondary py-0 px-2">
+                                <i class="bi bi-person-lines-fill"></i> Chi tiết
+                            </a>
                             {% if u.id != auth.id and u.role != 'admin' %}
-                                <form action="{{ route('/admin/users/' ~ u.id ~ '/ban') }}" method="POST"
-                                    onsubmit="return confirm('{{ u.status == 'banned' ? 'Mở khóa' : 'Khóa' }} tài khoản này?')">
+                                <form action="{{ route('/admin/users/' ~ u.id ~ '/toggle-status') }}" method="POST" class="d-inline">
                                     <button class="btn btn-sm {{ u.status == 'banned' ? 'btn-success' : 'btn-danger' }} py-0 px-2">
                                         <i class="bi bi-{{ u.status == 'banned' ? 'unlock' : 'lock' }} me-1"></i>
                                         {{ u.status == 'banned' ? 'Mở khóa' : 'Khóa' }}
                                     </button>
                                 </form>
-                            {% else %}
-                                <span class="text-muted small">—</span>
+                                <form action="{{ route('/admin/users/' ~ u.id ~ '/role') }}" method="POST" class="d-inline ms-1">
+                                    <input type="hidden" name="role" value="{{ u.role == 'landlord' ? 'tenant' : 'landlord' }}">
+                                    <button class="btn btn-sm btn-outline-primary py-0 px-2">
+                                        <i class="bi bi-arrow-repeat me-1"></i>
+                                        {{ u.role == 'landlord' ? 'Đổi thành tenant' : 'Đổi thành landlord' }}
+                                    </button>
+                                </form>
+                                <form action="{{ route('/admin/users/' ~ u.id ~ '/trusted') }}" method="POST" class="d-inline ms-1">
+                                    <button class="btn btn-sm {{ u.is_trusted_landlord ? 'btn-success' : 'btn-outline-success' }} py-0 px-2">
+                                        <i class="bi bi-patch-check me-1"></i>
+                                        {{ u.is_trusted_landlord ? 'Bỏ trusted' : 'Trusted' }}
+                                    </button>
+                                </form>
                             {% endif %}
                         </td>
                     </tr>

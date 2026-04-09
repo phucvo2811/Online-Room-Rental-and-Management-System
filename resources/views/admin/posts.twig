@@ -1,0 +1,53 @@
+{% extends 'layouts/admin.twig' %}
+{% set active_page = 'posts' %}
+{% block title %}Duyệt bài đăng{% endblock %}
+
+{% block admin_content %}
+<div class="container-fluid">
+    <h4 class="mb-4">Duyệt bài đăng</h4>
+    <div class="mb-3">
+        <a href="{{ route('/admin/posts?status=inactive') }}" class="btn btn-sm btn-{{ currentStatus=='inactive' ? 'primary' : 'outline-secondary' }} me-1">Chờ duyệt</a>
+        <a href="{{ route('/admin/posts?status=active') }}" class="btn btn-sm btn-{{ currentStatus=='active' ? 'primary' : 'outline-secondary' }}">Đã duyệt</a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-sm align-middle">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Người đăng</th>
+                    <th>Loại</th>
+                    <th>Tiêu đề</th>
+                    <th>Nguồn</th>
+                    <th>Giá</th>
+                    <th>Trạng thái</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for post in posts %}
+                    <tr>
+                        <td>{{ post.id }}</td>
+                        <td>{{ post.landlord_name }}</td>
+                        <td>{{ post.type == 'block' ? 'Khu' : 'Phòng' }}</td>
+                        <td>{{ post.title }}</td>
+                        <td>{{ post.type == 'block' ? (post.block_name ?: 'Không có') : (post.room_title ?: 'Không có') }}</td>
+                        <td>{{ post.price_low ? post.price_low|money : '-' }}{{ post.price_high ? ' - ' ~ post.price_high|money : '' }}</td>
+                        <td><span class="badge bg-{{ post.status == 'active' ? 'success' : 'warning' }}">{{ post.status == 'active' ? 'Đã duyệt' : 'Chờ duyệt' }}</span></td>
+                        <td>
+                            <form method="POST" action="{{ route('/admin/posts/' ~ post.id ~ '/approve') }}" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-success" {{ post.status == 'active' ? 'disabled' : '' }}>Duyệt</button>
+                            </form>
+                            <form method="POST" action="{{ route('/admin/posts/' ~ post.id ~ '/reject') }}" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-danger">Từ chối</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="8" class="text-center">Không có bài đăng nào.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock admin_content %}

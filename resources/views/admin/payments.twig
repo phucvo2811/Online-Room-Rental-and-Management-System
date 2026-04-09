@@ -1,0 +1,82 @@
+{% extends 'layouts/admin.twig' %}
+{% set active_page = 'payments' %}
+{% block title %}Quản lý Thanh toán{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <h4 class="fw-800 mb-0">Quản lý Thanh toán</h4>
+</div>
+
+{# Stats #}
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm p-3">
+            <div class="small text-muted mb-1">Tổng giao dịch</div>
+            <div class="fs-4 fw-700">{{ stats.total }}</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm p-3">
+            <div class="small text-muted mb-1">Thành công</div>
+            <div class="fs-4 fw-700 text-success">{{ stats.success_count }}</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm p-3">
+            <div class="small text-muted mb-1">Doanh thu</div>
+            <div class="fs-4 fw-700 text-primary">{{ stats.revenue|number_format(0,',','.') }}đ</div>
+        </div>
+    </div>
+</div>
+
+{# Table #}
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>Người dùng</th>
+                    <th>Gói</th>
+                    <th>Số tiền</th>
+                    <th>Mã GD (VNPay)</th>
+                    <th>Ngân hàng</th>
+                    <th>Trạng thái</th>
+                    <th>Ngày</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in payments %}
+                <tr>
+                    <td class="small text-muted">{{ p.id }}</td>
+                    <td>
+                        <div class="fw-600">{{ p.user_name }}</div>
+                        <div class="small text-muted">{{ p.user_email }}</div>
+                    </td>
+                    <td>
+                        <span class="badge bg-primary rounded-pill">{{ p.package_type }}</span>
+                    </td>
+                    <td class="fw-600">{{ p.amount|number_format(0,',','.') }}đ</td>
+                    <td class="font-monospace small">{{ p.vnp_transaction_no ?? p.vnp_txn_ref }}</td>
+                    <td>{{ p.vnp_bank_code ?? '—' }}</td>
+                    <td>
+                        {% if p.status == 'success' %}
+                            <span class="badge bg-success">Thành công</span>
+                        {% elseif p.status == 'pending' %}
+                            <span class="badge bg-warning text-dark">Chờ</span>
+                        {% elseif p.status == 'failed' %}
+                            <span class="badge bg-danger">Thất bại</span>
+                        {% else %}
+                            <span class="badge bg-secondary">{{ p.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="small text-muted">{{ p.created_at|date('H:i d/m/Y') }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="8" class="text-center text-muted py-4">Chưa có giao dịch nào.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

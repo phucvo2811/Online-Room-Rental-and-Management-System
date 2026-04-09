@@ -1,0 +1,52 @@
+{% extends 'layouts/admin.twig' %}
+{% set active_page = 'pro' %}
+{% block title %}Quản lý PRO{% endblock %}
+
+{% block admin_content %}
+<h4 class="fw-800 mb-4">Quản lý gói PRO</h4>
+<div class="row g-3 mb-4">
+    <div class="col-md-4"><div class="card p-3">Active: {{ active_count }}</div></div>
+    <div class="col-md-4"><div class="card p-3">Expired: {{ expired_count }}</div></div>
+    <div class="col-md-4"><div class="card p-3">Total plans: {{ subscriptions|length }}</div></div>
+</div>
+
+<div class="card p-3 mb-4">
+    <h6>Cấu hình giá PRO</h6>
+    <form method="POST" action="{{ route('/admin/pro/settings') }}">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-3">
+                <input type="number" name="pro_7_price" value="{{ (settings.pro_7_price|default(0)) }}" class="form-control" step="0.01" placeholder="Giá 7 ngày">
+            </div>
+            <div class="col-md-3">
+                <input type="number" name="pro_30_price" value="{{ (settings.pro_30_price|default(0)) }}" class="form-control" step="0.01" placeholder="Giá 30 ngày">
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-primary">Lưu</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="card p-3">
+    <h6>Đơn PRO mới nhất</h6>
+    <div class="table-responsive">
+        <table class="table table-sm mb-0">
+            <thead><tr><th>ID</th><th>User</th><th>Bắt đầu</th><th>Kết thúc</th><th>Status</th><th>Giá</th></tr></thead>
+            <tbody>
+                {% for s in subscriptions %}
+                <tr>
+                    <td>{{ s.id }}</td>
+                    <td>{{ s.user_name }} ({{ s.user_email }})</td>
+                    <td>{{ s.starts_at|date('d/m/Y') }}</td>
+                    <td>{{ s.ends_at|date('d/m/Y') }}</td>
+                    <td>{{ s.status }}</td>
+                    <td>{{ s.price|number_format(0,',','.') }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6">Chưa có đơn</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

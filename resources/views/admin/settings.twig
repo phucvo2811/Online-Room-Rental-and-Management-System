@@ -1,0 +1,33 @@
+{% extends 'layouts/admin.twig' %}
+
+{% block admin_content %}
+    <h2 class="mb-4">Cài đặt hệ thống</h2>
+    {% if flash.success %}
+        <div class="alert alert-success">{{ flash.success }}</div>
+    {% endif %}
+    {% if flash.danger %}
+        <div class="alert alert-danger">{{ flash.danger }}</div>
+    {% endif %}
+
+    <form action="{{ route('/admin/settings') }}" method="POST" enctype="multipart/form-data">
+        <div class="mb-3">
+            <label for="site_name" class="form-label">Tên website</label>
+            <input type="text" id="site_name" name="site_name" class="form-control"
+                   value="{{ settings.site_name|default(app_name) }}" required>
+            <div class="form-text">Tên này sẽ hiển thị ở tiêu đề và logo navbar.</div>
+        </div>
+
+        <div class="mb-3">
+            <label for="site_logo" class="form-label">Logo website</label>
+            {% if settings.site_logo %}
+                <div class="mb-2">
+                    <img src="{{ upload_url ~ settings.site_logo }}" alt="Logo" style="max-height: 80px;" />
+                </div>
+            {% endif %}
+            <input type="file" id="site_logo" name="site_logo" class="form-control">
+            <div class="form-text">Ảnh PNG/JPG (max 2MB). Nếu không chọn, logo đang dùng sẽ giữ nguyên.</div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Lưu cài đặt</button>
+    </form>
+{% endblock %}

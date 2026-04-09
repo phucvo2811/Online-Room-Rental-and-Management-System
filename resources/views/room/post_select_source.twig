@@ -1,0 +1,37 @@
+{% extends 'layouts/base.twig' %}
+{% block title %}Chọn nguồn đăng tin{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="mb-3 d-flex gap-2 flex-wrap">
+        <a href="{{ route('/my-posts') }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Quay lại</a>
+        <a href="{{ route('/my-blocks') }}" class="btn btn-sm btn-info">BDS của tôi</a>
+        <a href="{{ route('/rooms/create') }}" class="btn btn-sm btn-primary">Đăng ký phòng trọ mới</a>
+        <a href="{{ route('/blocks/create') }}" class="btn btn-sm btn-primary">Đăng ký nhà trọ mới</a>
+    </div>
+    <h4 class="fw-bold mb-3">Chọn Khu trọ / Phòng đã đăng để tạo bài tin</h4>
+
+    <div class="mb-4">
+        <h5>Chọn BĐS (Property) để tạo bài đăng</h5>
+        <div class="row g-3">
+            {% for property in properties %}
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h6>{{ property.name }}</h6>
+                            <p class="mb-1 small text-muted">{{ property.address }}</p>
+                            <p class="mb-1"><span class="badge bg-secondary">{{ property.type|replace({'_':' '})|title }}</span></p>
+                            <p class="mb-2 small">{{ property.description|length > 100 ? property.description|slice(0,100) ~ '...' : property.description }}</p>
+                            <a href="{{ route('/posts/create') }}?property_id={{ property.id }}" class="btn btn-primary btn-sm">Chọn</a>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="col-12">
+                    <div class="alert alert-warning">Bạn chưa có BĐS nào. Vui lòng tạo BĐS trước.</div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

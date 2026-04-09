@@ -15,7 +15,7 @@ class AuthController extends BaseController
 
     public function loginForm(): void
     {
-        if ($this->isLoggedIn()) $this->redirect('/dashboard');
+        if ($this->isLoggedIn()) $this->redirect('/');
         $this->view('auth/login', ['pageTitle' => 'Đăng nhập']);
     }
 
@@ -41,7 +41,7 @@ class AuthController extends BaseController
                     $_SESSION['user_avatar'] = $user['avatar'];
                     $redirect = $_SESSION['redirect_after_login'] ?? null;
                     unset($_SESSION['redirect_after_login']);
-                    $this->redirect($user['role'] === 'admin' ? '/admin' : ($redirect ? '' : '/dashboard'));
+                    $this->redirect($user['role'] === 'admin' ? '/admin' : ($redirect ?: '/'));
                 }
             } else {
                 $errors['general'] = 'Email hoặc mật khẩu không đúng.';
@@ -52,7 +52,7 @@ class AuthController extends BaseController
 
     public function registerForm(): void
     {
-        if ($this->isLoggedIn()) $this->redirect('/dashboard');
+        if ($this->isLoggedIn()) $this->redirect('/');
         $this->view('auth/register', ['pageTitle' => 'Đăng ký']);
     }
 
